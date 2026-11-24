@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<!-- Finanças. — controle financeiro pessoal · © 2026 Tiago. Uso pessoal. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F4B55">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Finanças.">
+<title>Finanças.</title>
+<script src="tema.js"></script>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="icons/icone.svg">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="stylesheet" href="fontes.css">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="trava" id="trava" hidden>
+  <form class="trava-caixa" id="trava-form" data-form="destravar">
+    <img src="icons/marca.png" width="64" height="64" alt="">
+    <h1>Finanças.</h1>
+    <p>Digite sua senha para abrir.</p>
+    <input type="password" id="trava-senha" name="senha" class="campo" autocomplete="current-password" aria-label="Senha" placeholder="Senha">
+    <p class="erro" id="trava-erro" role="alert"></p>
+    <button class="btn pri largo" type="submit">Entrar</button>
+  </form>
+</div>
+
+<div class="app" id="app">
+  <aside class="rail" id="rail">
+    <div class="marca" data-act="tela" data-t="painel" role="button" tabindex="0" title="Ir para o Painel">
+      <img src="icons/marca.png" width="38" height="38" alt="">
+      <div class="marca-txt"><b>Finanças.</b><span>Seu dinheiro,<br>mês a mês</span></div>
+    </div>
+    <nav class="nav" id="nav" aria-label="Seções"></nav>
+    <div class="resumo">
+      <dl id="resumo"></dl>
+      <div class="salvo" id="salvo"><i></i><span>Abrindo…</span></div>
+      <div class="autoria">Desenvolvido por <b>Tiago</b><br>© 2026 Finanças. · uso pessoal<br><span id="versao"></span></div>
+    </div>
+  </aside>
+  <button class="rail-seta" id="bt-rail" type="button" data-act="rail" aria-label="Esconder o menu lateral" title="Esconder / mostrar o menu lateral">‹</button>
+  <div class="principal">
+    <header class="topo" id="topo">
+      <div class="mes-nav">
+        <button class="btn-ico" type="button" data-act="mesAnt" aria-label="Mês anterior" title="Mês anterior"></button>
+        <button class="mes-lbl" type="button" data-act="menuMes" id="mes-lbl" title="Escolher ou criar mês"></button>
+        <button class="btn-ico" type="button" data-act="mesProx" aria-label="Próximo mês" title="Próximo mês"></button>
+      </div>
+      <div class="metas-topo" id="metas-topo" aria-label="Metas"></div>
+      <div class="topo-dir">
+        <button class="chip-livre" type="button" id="chip-livre" data-act="abrirJan" data-id="mes.livre" title="Quanto ainda posso gastar este mês"></button>
+        <button class="btn mini" type="button" data-act="buscar" id="bt-buscar" title="Buscar (Ctrl+L)"></button>
+        <button class="btn-ico" type="button" data-act="menuJanelas" id="bt-janelas" title="Janelas desta tela" aria-label="Janelas desta tela"></button>
+        <button class="btn-ico" type="button" data-act="tema" id="bt-tema" title="Modo noturno / modo dia" aria-label="Trocar tema"></button>
+      </div>
+    </header>
+    <main class="mesa" id="mesa" aria-live="off"></main>
+  </div>
+</div>
+<nav class="abas-cel" id="abas-cel" aria-label="Seções"></nav>
+<div class="avisos" id="avisos" aria-live="polite"></div>
+<div class="busca-fundo" id="busca" hidden>
+  <div class="busca" role="dialog" aria-label="Buscar">
+    <div class="busca-campo"><span id="busca-ico"></span><input id="busca-q" autocomplete="off" placeholder="Buscar conta, gasto, mês, meta ou ação…" aria-label="Buscar"><kbd>Esc</kbd></div>
+    <ul class="busca-res" id="busca-res" role="listbox"></ul>
+    <div class="busca-rod">↑ ↓ para escolher · Enter abre · Ctrl+L de qualquer lugar</div>
+  </div>
+</div>
+<div class="pop" id="pop" hidden></div>
+<input type="file" id="arq" accept=".json,application/json" hidden>
+<script src="nucleo.js"></script>
+<script src="janelas.js"></script>
+<script src="graficos.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

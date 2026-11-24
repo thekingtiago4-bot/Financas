@@ -1,0 +1,6 @@
+node_modules/
+*.log
+# NUNCA versionar dados reais exportados (cópias do app têm valores pessoais)
+financas-copia-*.json
+orange-backup-*.json
+orange-dados.json
