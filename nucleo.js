@@ -40,7 +40,7 @@
 
   /* ---------- dados padrão (as contas do Tiago, vindas do Orange) ---------- */
   N.padrao = () => ({
-    v: 1, nome: 'Tiago',
+    v: 1, nome: 'Tiago', guardar: { pct: 10, inicial: 0 },
     modelo: {
       rendas: [{ n: 'Salário - Tiago', v: 332341, dia: 1 }, { n: 'Salário - Sthéfani', v: 260000, dia: 1 }, { n: 'VA', v: 0, dia: 30, va: 1 }],
       contas: [['FIXAS', 'Aluguel', 97542], ['FIXAS', 'Luz', 18000], ['FIXAS', 'Água / Esgoto', 4000], ['PESSOAIS', 'Internet fixa', 9900], ['PESSOAIS', 'Internet móvel', 11156],
@@ -79,7 +79,7 @@
     } else src = D.cfg.modelo;
     const comValor = o.valores !== false;
     const M = {
-      k, nome: (o.nome || '').trim(), criado: Date.now(),
+      k, nome: (o.nome || '').trim(), criado: Date.now(), guardar: null,
       rendas: src.rendas.map(r => ({ id: N.uid(), n: r.n, v: comValor ? r.v : 0, dia: r.dia || 0, va: r.va ? 1 : 0, rec: 1 })),
       contas: src.contas.map(c => ({ id: N.uid(), c: c.c, n: c.n, v: comValor ? c.v : 0, dia: c.dia || 0, pago: false, rec: 1 })),
       gastos: []
@@ -103,16 +103,25 @@
       if (N.ehCartao(c)) cartoes.add('card:' + c.n);
       const v = N.valConta(M, c); C += v; if (c.pago) pagas += v; porCat[c.c] = (porCat[c.c] || 0) + v;
     });
-    let Gv = 0, Gva = 0, Gc = 0;
+    let Gv = 0, Gva = 0, Gc = 0, Ge = 0;
     M.gastos.forEach(g => {
       if (g.f === 'va') Gva += g.v;
+      else if (g.f === 'emerg') Ge += g.v;
       else if (g.f.startsWith('card:')) { Gc += g.v; if (!cartoes.has(g.f)) { C += g.v; porCat['CARTÕES'] = (porCat['CARTÕES'] || 0) + g.v; } }
       else Gv += g.v;
     });
     if (Gv) porCat['DIA A DIA'] = Gv;
-    const sobra = R - C - Gv, res = N.reserva(D, k), livre = sobra - res;
-    return { M, R, VA, C, pagas, aPagar: C - pagas, porCat, Gv, Gva, Gc, sobra, res, livre, vaSaldo: VA - Gva, gastoTotal: C + Gv };
+    const pct = N.pctGuardar(D), auto = Math.max(0, Math.round((R - C) * pct / 100)), G = M.guardar == null ? auto : M.guardar;
+    const sobra = R - C - Gv, res = N.reserva(D, k), livre = sobra - res - G;
+    return { M, R, VA, C, pagas, aPagar: C - pagas, porCat, Gv, Gva, Gc, Ge, G, Gauto: M.guardar == null, pct, sobra, res, livre, vaSaldo: VA - Gva, gastoTotal: C + Gv };
   };
+  /* ---------- dinheiro guardado (a "caixinha" da casa): entra X% da sobra, sai o que foi tirado como Emergência ---------- */
+  N.pctGuardar = D => Math.min(100, Math.max(0, +((D.cfg.guardar || {}).pct) || 0));
+  N.historicoGuardado = (D, ate) => {
+    let saldo = +((D.cfg.guardar || {}).inicial) || 0;
+    return Object.keys(D.meses).sort().filter(k => !ate || k <= ate).map(k => { const c = N.calc(D, k); saldo += c.G - c.Ge; return { k, entrou: c.G, saiu: c.Ge, saldo }; });
+  };
+  N.saldoGuardado = (D, ate) => { const h = N.historicoGuardado(D, ate); return h.length ? h[h.length - 1].saldo : +((D.cfg.guardar || {}).inicial) || 0; };
   N.diasRestantes = (k, hoje = new Date()) => {
     const hk = N.hojeK(hoje);
     if (k < hk) return 0; if (k > hk) return N.dias(k);
@@ -189,12 +198,17 @@
     if (!c.R) out.push({ lvl: 'warn', id: 'renda', t: 'Falta a renda do mês', x: 'Preencha o salário na janela Rendas para eu conseguir fazer as contas.' });
     if (c.R) {
       if (c.sobra < 0) out.push({ lvl: 'bad', id: 'livre', t: 'Mês no vermelho', x: nome + ', as contas passam a renda em ' + N.brl(-c.sobra) + '. Este mês não sobra nada para guardar: veja o que dá para adiar ou renegociar.' });
-      else if (c.res > 0 && c.livre < 0) out.push({ lvl: 'bad', id: 'livre', t: 'Você já está usando o dinheiro da meta', x: 'Para as metas você precisa guardar ' + N.brl(c.res) + ', mas só sobram ' + N.brl(c.sobra) + '. Do jeito que está, vai guardar ' + N.brl(-c.livre) + ' a menos este mês.' });
-      else if (c.res > 0 && c.livre < Math.max(3000, Math.round(c.R * 0.01))) out.push({ lvl: 'bad', id: 'livre', t: 'Não dá para gastar nem mais R$ 1', x: nome + ', você ganha ' + N.brl(c.R) + ' e as contas estão em ' + N.brl(c.gastoTotal) + '. Sobram ' + N.brl(c.sobra) + ', praticamente o que você precisa guardar (' + N.brl(c.res) + '). Qualquer gasto a mais sai da sua meta.' });
+      else if (c.res + c.G > 0 && c.livre < 0) out.push({ lvl: 'bad', id: 'livre', t: 'Você já está usando o dinheiro de guardar', x: 'Este mês era para separar ' + N.brl(c.res + c.G) + ' (' + [c.G ? N.brl(c.G) + ' para o guardado' : '', c.res ? N.brl(c.res) + ' para as metas' : ''].filter(Boolean).join(' e ') + '), mas só sobram ' + N.brl(c.sobra) + '. Do jeito que está, vai guardar ' + N.brl(-c.livre) + ' a menos.' });
+      else if (c.res + c.G > 0 && c.livre < Math.max(3000, Math.round(c.R * 0.01))) out.push({ lvl: 'bad', id: 'livre', t: 'Não dá para gastar nem mais R$ 1', x: nome + ', você ganha ' + N.brl(c.R) + ' e as contas estão em ' + N.brl(c.gastoTotal) + '. Sobram ' + N.brl(c.sobra) + ', praticamente o que você precisa guardar (' + N.brl(c.res + c.G) + '). Qualquer gasto a mais sai do que você ia guardar.' });
       else {
         const porDia = restam ? Math.floor(c.livre / restam) : 0;
-        out.push({ lvl: c.livre < c.R * 0.05 ? 'warn' : 'ok', id: 'livre', t: 'Você ainda tem ' + N.brl(c.livre) + ' livre', x: (c.res > 0 ? 'É o que dá para gastar antes de começar a usar os ' + N.brl(c.res) + ' que seriam guardados para as metas.' : 'Você ainda não reservou nada para metas este mês: crie uma meta para eu separar esse dinheiro.') + (atual && restam ? ' Isso dá ' + N.brl(porDia) + ' por dia até o dia ' + nd + '.' : '') });
+        out.push({ lvl: c.livre < c.R * 0.05 ? 'warn' : 'ok', id: 'livre', t: 'Você ainda tem ' + N.brl(c.livre) + ' livre', x: (c.res + c.G > 0 ? 'É o que dá para gastar antes de começar a usar os ' + N.brl(c.res + c.G) + ' que seriam guardados' + (c.res ? ' (metas + guardado)' : '') + '.' : 'Você ainda não está separando nada para guardar: defina o % em Metas → Dinheiro guardado.') + (atual && restam ? ' Isso dá ' + N.brl(porDia) + ' por dia até o dia ' + nd + '.' : '') });
       }
+    }
+    {
+      const sg = N.saldoGuardado(D, k);
+      if (c.Ge > c.G && c.Ge) out.push({ lvl: 'warn', id: 'guardado', t: 'Saiu mais do guardado do que entrou', x: 'Este mês você tirou ' + N.brl(c.Ge) + ' do dinheiro guardado e está colocando ' + N.brl(c.G) + '. Saldo guardado agora: ' + N.brl(sg) + '.' });
+      else if (c.R) out.push({ lvl: 'info', id: 'guardado', t: 'Dinheiro guardado: ' + N.brl(sg), x: 'Este mês entram ' + N.brl(c.G) + (c.Gauto ? ' (' + c.pct + '% do que sobra depois das contas)' : '') + (c.Ge ? ' e já saíram ' + N.brl(c.Ge) + ' como emergência' : '') + '.' });
     }
     // tendência: cartões e diversos, últimos 3 meses contra os anteriores
     const nomes = [...new Set(c.M.contas.filter(x => (x.c === 'CARTÕES' || x.c === 'DIVERSOS') && !x.pid).map(x => x.n))];
@@ -272,7 +286,7 @@
     if (/(gastar|livre|sobra|posso)/.test(q)) {
       if (!c) return r(N.nomeCurto(k) + ' ainda não foi criado.');
       const restam = N.diasRestantes(k, hoje);
-      return r(c.livre > 0 ? 'Você tem ' + N.brl(c.livre) + ' livre' + (restam ? ' (' + N.brl(Math.floor(c.livre / restam)) + ' por dia até o fim do mês)' : '') + (c.res ? ', já separando ' + N.brl(c.res) + ' para as metas.' : '.') : 'Nada, ' + nome + '. ' + (c.sobra < 0 ? 'As contas já passam a renda em ' + N.brl(-c.sobra) + '.' : 'O que sobra (' + N.brl(c.sobra) + ') já é o dinheiro das metas (' + N.brl(c.res) + ').'));
+      return r(c.livre > 0 ? 'Você tem ' + N.brl(c.livre) + ' livre' + (restam ? ' (' + N.brl(Math.floor(c.livre / restam)) + ' por dia até o fim do mês)' : '') + (c.res + c.G ? ', já separando ' + N.brl(c.res + c.G) + ' para guardar.' : '.') : 'Nada, ' + nome + '. ' + (c.sobra < 0 ? 'As contas já passam a renda em ' + N.brl(-c.sobra) + '.' : 'O que sobra (' + N.brl(c.sobra) + ') já é o dinheiro de guardar (' + N.brl(c.res + c.G) + ').'));
     }
     if (c) {
       const card = c.M.contas.find(x => x.c === 'CARTÕES' && q.includes(N.norm(x.n)));
@@ -284,6 +298,10 @@
         const ab = c.M.contas.filter(x => !x.pago && N.ativa(D, x) && x.v).sort((a, b) => (a.dia || 99) - (b.dia || 99));
         return r(ab.length ? 'Faltam pagar ' + N.brl(c.aPagar) + ':\n' + ab.slice(0, 12).map(x => '• ' + x.n + (x.dia ? ' (dia ' + x.dia + ')' : '') + ' ' + N.brl(N.valConta(c.M, x))).join('\n') : 'Tudo pago neste mês.');
       }
+    }
+    if (/(guardad|caixinha|emergen|reserva da casa)/.test(q)) {
+      const h = N.historicoGuardado(D, k).slice(-6);
+      return r('Dinheiro guardado: ' + N.brl(N.saldoGuardado(D, k)) + '\n' + h.map(x => '• ' + N.curto(x.k) + ': entrou ' + N.brl(x.entrou) + (x.saiu ? ', saiu ' + N.brl(x.saiu) : '') + ' → ' + N.brl(x.saldo)).join('\n'));
     }
     if (/(parcel|emprest)/.test(q)) return r((D.cfg.parcelas || []).map(p => '• ' + p.n + ': ' + N.brl(p.v) + ', última em ' + N.curto(N.fimParcela(p))).join('\n') || 'Nenhum parcelamento cadastrado.');
     if (/meta/.test(q)) return r((D.cfg.metas || []).map(m => '• ' + m.n + ': ' + N.brl(N.guardado(m)) + ' de ' + N.brl(m.alvo) + ' (' + N.pct(N.guardado(m), m.alvo) + '%). ' + N.planoMeta(m, k).txt).join('\n') || 'Você ainda não tem metas.');
@@ -297,7 +315,8 @@
   const id = v => /^[a-z0-9_-]{1,24}$/i.test(v) ? v : N.uid();
   N.sanear = D => {
     const P = N.padrao(), cfg = D.cfg || {};
-    const out = { cfg: { v: 1, nome: txt(cfg.nome || P.nome, 40), modelo: { rendas: [], contas: [] }, parcelas: [], metas: [] }, meses: {} };
+    const gu = cfg.guardar || P.guardar;
+    const out = { cfg: { v: 1, nome: txt(cfg.nome || P.nome, 40), guardar: { pct: Math.min(100, Math.max(0, +gu.pct || 0)), inicial: int(gu.inicial) }, modelo: { rendas: [], contas: [] }, parcelas: [], metas: [] }, meses: {} };
     const m = cfg.modelo || P.modelo;
     out.cfg.modelo.rendas = (m.rendas || []).slice(0, 50).map(r => ({ n: txt(r.n), v: int(r.v, 0), dia: int(r.dia, 0, 31), va: r.va ? 1 : 0 }));
     out.cfg.modelo.contas = (m.contas || []).slice(0, 200).map(c => ({ c: cat(c.c), n: txt(c.n), v: int(c.v, 0), dia: int(c.dia, 0, 31) }));
@@ -306,10 +325,10 @@
     Object.keys(D.meses || {}).filter(N.validoK).forEach(k => {
       const M = D.meses[k];
       out.meses[k] = {
-        k, nome: txt(M.nome || '', 40), criado: int(M.criado, 0),
+        k, nome: txt(M.nome || '', 40), criado: int(M.criado, 0), guardar: M.guardar == null ? null : int(M.guardar, 0),
         rendas: (M.rendas || []).slice(0, 50).map(r => ({ id: id(r.id), n: txt(r.n), v: int(r.v, 0), dia: int(r.dia, 0, 31), va: r.va ? 1 : 0, rec: r.rec === 0 ? 0 : 1 })),
         contas: (M.contas || []).slice(0, 300).map(c => { const o = { id: id(c.id), c: cat(c.c), n: txt(c.n), v: int(c.v, 0), dia: int(c.dia, 0, 31), pago: !!c.pago, rec: c.rec === 0 ? 0 : 1 }; if (c.pid) { o.pid = id(c.pid); o.pk = int(c.pk, 1, 600); o.tot = int(c.tot, 1, 600); } return o; }),
-        gastos: (M.gastos || []).slice(0, 2000).map(g => ({ id: id(g.id), d: int(g.d, 1, 31), n: txt(g.n), v: int(g.v, 0), f: /^(pix|din|va|card:.{1,80})$/.test(g.f) ? g.f : 'pix' }))
+        gastos: (M.gastos || []).slice(0, 2000).map(g => ({ id: id(g.id), d: int(g.d, 1, 31), n: txt(g.n), v: int(g.v, 0), f: /^(pix|din|va|emerg|card:.{1,80})$/.test(g.f) ? g.f : 'pix' }))
       };
     });
     return out;

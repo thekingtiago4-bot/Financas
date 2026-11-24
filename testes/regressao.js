@@ -33,11 +33,23 @@ const verdade = (c, nome) => igual(!!c, true, nome);
     D.cfg.metas = [m]; D.meses['2026-11'].contas.forEach(x => { x.v = 0; });
     const c2 = N.calc(D, '2026-11');
     igual(c2.res, 250000, 'meta com prazo reserva o valor do mês');
-    igual(c2.livre, 592341 - 250000 - N.soma(D.meses['2026-11'].contas.filter(x => x.pid), x => x.v), 'livre = sobra - reserva');
+    const parc = N.soma(D.meses['2026-11'].contas.filter(x => x.pid), x => x.v);
+    igual([c2.G, c2.livre], [Math.round((592341 - parc) * .1), 592341 - parc - 250000 - Math.round((592341 - parc) * .1)], 'livre = sobra − guardado (10%) − reserva da meta');
     D.meses['2026-11'].gastos.push({ id: 'g', d: 3, n: 'Mercado', v: 10000, f: 'card:Nubank' });
     igual(N.valConta(D.meses['2026-11'], D.meses['2026-11'].contas.find(x => x.n === 'Nubank')), 10000, 'gasto no cartão soma na fatura');
     const r1 = N.responder(D, '2026-11', 'quero juntar 100 mil', {}); verdade(/Quanto por mês/.test(r1.txt), 'assistente pergunta quanto por mês');
     const r2 = N.responder(D, '2026-11', '800', r1.ctx); verdade(/10 anos e 5 meses/.test(r2.txt), 'assistente responde o tempo');
+    {
+      const E = { cfg: N.padrao(), meses: {} };
+      E.cfg.guardar.pct = 20;
+      ['2026-10', '2026-11'].forEach(k => { E.meses[k] = N.criarMes(E, k, {}); E.meses[k].contas.forEach(x => { x.v = 0; }); E.meses[k].rendas = [{ id: 'r', n: 'Sal', v: 600000, dia: 1, va: 0 }]; });
+      igual(N.calc(E, '2026-10').G, 120000, 'guarda 20% da sobra (6.000 → 1.200)');
+      E.meses['2026-11'].gastos.push({ id: 'e', d: 2, n: 'Conserto', v: 30000, f: 'emerg' });
+      igual(N.historicoGuardado(E).map(x => x.saldo), [120000, 210000], 'saldo guardado acumula e desconta a emergência (1.200 + 1.200 − 300)');
+      igual(N.calc(E, '2026-11').livre, N.calc(E, '2026-10').livre, 'emergência não sai do salário do mês');
+      E.meses['2026-11'].guardar = 50000;
+      igual(N.saldoGuardado(E), 140000, 'valor fixo de guardar no mês substitui o %');
+    }
     const imp = N.importar({ meses: { '2026-10': { rendas: [{ id: 'a', n: 'Salário - Tiago', v: 3323.41, rec: 1 }], contas: [{ id: 'b', c: 'OUTROS', n: 'X', v: 10.5, rec: 1 }] } }, parcelas: [], metas: [{ id: 'carro', n: 'Carro', a: 40000, h: [{ d: '01/10/2026', v: 100 }] }] });
     igual([imp.meses['2026-10'].rendas[0].v, imp.meses['2026-10'].rendas[0].dia, imp.meses['2026-10'].contas[0].c, imp.cfg.metas[0].alvo, imp.cfg.metas[0].h[0].k], [332341, 1, 'DIVERSOS', 4000000, '2026-10'], 'importa backup do Orange');
   }
@@ -100,6 +112,18 @@ const verdade = (c, nome) => igual(!!c, true, nome);
   await p.locator('#bt-criar-mes').click();
   const dez = await p.evaluate(() => ({ sel: FIN.sel(), clt2: FIN.D().meses[FIN.sel()].contas.find(x => x.pid === 'clt2').pk, nub: FIN.D().meses[FIN.sel()].contas.find(x => x.n === 'Nubank').v }));
   igual(dez, { sel: N.addM(N.hojeK(), 1), clt2: 2 + N.diffM('2026-10', N.addM(N.hojeK(), 1)), nub: 0 }, 'criar mês seguinte com parcelas numeradas e valores zerados');
+
+  console.log('Dinheiro guardado');
+  await p.click('.nav [data-t="mes"]');
+  const gm = p.locator('[data-ch="gMes"]'); await gm.fill('1200,00'); await gm.press('Tab');
+  await p.click('.nav [data-id="f.gasto"]');
+  const fe = p.locator('[data-form="gastoF"]');
+  await fe.locator('[name=n]').fill('Pneu'); await fe.locator('[name=v]').fill('300'); await fe.locator('[name=f]').selectOption('emerg'); await fe.locator('button').click();
+  igual(await p.evaluate(() => FIN.N.saldoGuardado(FIN.D(), FIN.sel())), await p.evaluate(() => FIN.N.historicoGuardado(FIN.D()).reduce((s, x) => s + x.entrou - x.saiu, 0)), 'saldo guardado = entradas − emergências');
+  verdade(/R\$/.test(await p.locator('.meta-chip.guard').textContent()), 'chip do guardado na barra superior');
+  await p.locator('.meta-chip.guard').click();
+  verdade(await p.locator('.jan[data-id="metas.guardado"] table').count() >= 1, 'janela Dinheiro guardado com histórico');
+  await p.locator('.jan[data-id="f.gasto"] [data-j="x"]').click();
 
   console.log('Metas');
   await p.click('.nav [data-id="f.meta"]');
