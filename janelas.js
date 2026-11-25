@@ -30,7 +30,8 @@
     info: '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8v.1"/>',
     enviar: '<path d="M4 12 20 4l-6 16-3-7z"/>', cadeado: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/>',
     lixo: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>', editar: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
-    reset: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>', menu: '<path d="M4 6h16M4 12h16M4 18h16"/>'
+    reset: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
+    desfazer: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>', refazer: '<path d="m15 14 5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>', menu: '<path d="M4 6h16M4 12h16M4 18h16"/>'
   };
   const ico = (n, cls) => '<svg class="ico' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[n] || '') + '</svg>';
 

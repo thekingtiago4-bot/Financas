@@ -40,7 +40,7 @@
 
   /* ---------- dados padrão (as contas do Tiago, vindas do Orange) ---------- */
   N.padrao = () => ({
-    v: 1, nome: 'Tiago', guardar: { pct: 10, inicial: 0 },
+    v: 2, nome: 'Tiago', guardar: { pct: 10, inicial: 0 },
     modelo: {
       rendas: [{ n: 'Salário - Tiago', v: 332341, dia: 1 }, { n: 'Salário - Sthéfani', v: 260000, dia: 1 }, { n: 'VA', v: 0, dia: 30, va: 1 }],
       contas: [['FIXAS', 'Aluguel', 97542], ['FIXAS', 'Luz', 18000], ['FIXAS', 'Água / Esgoto', 4000], ['PESSOAIS', 'Internet fixa', 9900], ['PESSOAIS', 'Internet móvel', 11156],
@@ -49,9 +49,9 @@
     },
     parcelas: [
       { id: 'gel', n: 'Parcela geladeira', c: 'DIVERSOS', v: 32347, ini: '2026-10', p0: 3, tot: 15, dia: 0, folha: false },
-      { id: 'clt1', n: 'Empréstimo CLT I', c: 'EMPRÉSTIMOS', v: 3737, ini: '2026-10', p0: 2, tot: 18, dia: 0, folha: false },
-      { id: 'clt2', n: 'Empréstimo CLT II', c: 'EMPRÉSTIMOS', v: 17306, ini: '2026-10', p0: 2, tot: 7, dia: 0, folha: false },
-      { id: 'clt3', n: 'Empréstimo CLT III', c: 'EMPRÉSTIMOS', v: 63575, ini: '2026-10', p0: 1, tot: 18, dia: 0, folha: false }],
+      { id: 'clt1', n: 'Empréstimo CLT I', c: 'EMPRÉSTIMOS', v: 3737, ini: '2026-10', p0: 2, tot: 18, dia: 0, folha: true },
+      { id: 'clt2', n: 'Empréstimo CLT II', c: 'EMPRÉSTIMOS', v: 17306, ini: '2026-10', p0: 2, tot: 7, dia: 0, folha: true },
+      { id: 'clt3', n: 'Empréstimo CLT III', c: 'EMPRÉSTIMOS', v: 63575, ini: '2026-10', p0: 1, tot: 18, dia: 0, folha: true }],
     metas: [
       { id: 'carro', n: 'Carro', alvo: 4000000, modo: 'aporte', aporte: 0, prazo: '', taxa: 0, orc: false, h: [] },
       { id: 'casa', n: 'Casa', alvo: 8000000, modo: 'aporte', aporte: 0, prazo: '', taxa: 0, orc: false, h: [] },
@@ -86,6 +86,24 @@
     };
     N.addParcelas(D, M);
     return M;
+  };
+
+  /* dados antigos → regras novas (roda uma vez por versão dos dados) */
+  N.migrar = D => {
+    let mudou = false;
+    if ((D.cfg.v || 1) < 2) { // v2: empréstimos (CLT) são descontados em folha: só contam parcelas, não debitam de novo
+      (D.cfg.parcelas || []).forEach(p => { if (p.c === 'EMPRÉSTIMOS' && !p.folha) { p.folha = true; mudou = true; } });
+      D.cfg.v = 2; mudou = true;
+    }
+    return mudou;
+  };
+  /* contas do modelo que não estão no mês (ex.: apagada sem querer) */
+  N.faltandoDoModelo = (D, k) => { const M = D.meses[k]; if (!M) return []; const tem = new Set(M.contas.map(c => N.norm(c.n))); return D.cfg.modelo.contas.filter(c => !tem.has(N.norm(c.n))); };
+  /* volta os parcelamentos ao original (Orange), mantendo o "paga" de cada parcela já marcada */
+  N.resetarParcelas = D => {
+    const pagas = new Set(); Object.values(D.meses).forEach(M => M.contas.forEach(c => { if (c.pid && c.pago) pagas.add(c.pid + ':' + c.pk); }));
+    D.cfg.parcelas = N.padrao().parcelas;
+    Object.values(D.meses).forEach(M => { M.contas = M.contas.filter(c => !c.pid); N.addParcelas(D, M); M.contas.forEach(c => { if (c.pid && pagas.has(c.pid + ':' + c.pk)) c.pago = true; }); });
   };
 
   /* ---------- cálculos do mês ---------- */
@@ -238,7 +256,8 @@
     } else if (c.M.rendas.some(r => r.va)) out.push({ lvl: 'info', id: 'va', t: 'Preencha o valor do VA', x: 'O VA cai no dia 30. Coloque o valor na janela Rendas para eu acompanhar o saldo.' });
     (D.cfg.parcelas || []).forEach(p => {
       const f = N.fimParcela(p), d = N.diffM(k, f);
-      if (d >= 0 && d <= 3 && !p.folha) out.push({ lvl: 'info', id: 'parc:' + p.id, t: p.n + ' acaba em ' + N.curto(f), x: (d === 0 ? 'Esta é a última parcela! ' : '') + 'A partir de ' + N.curto(N.addM(f, 1)) + ' sobram ' + N.brl(p.v) + ' por mês. Coloque esse valor direto numa meta antes que ele “suma”.' });
+      if (d >= 0 && d <= 3 && p.folha) out.push({ lvl: 'info', id: 'parc:' + p.id, t: p.n + ' acaba em ' + N.curto(f), x: (d === 0 ? 'Esta é a última parcela! ' : '') + 'Como é descontado em folha, a partir de ' + N.curto(N.addM(f, 1)) + ' o salário deve vir ' + N.brl(p.v) + ' maior. Lembre de atualizar o valor do salário.' });
+      else if (d >= 0 && d <= 3) out.push({ lvl: 'info', id: 'parc:' + p.id, t: p.n + ' acaba em ' + N.curto(f), x: (d === 0 ? 'Esta é a última parcela! ' : '') + 'A partir de ' + N.curto(N.addM(f, 1)) + ' sobram ' + N.brl(p.v) + ' por mês. Coloque esse valor direto numa meta antes que ele “suma”.' });
     });
     const metas = D.cfg.metas || [];
     metas.forEach(m => {
@@ -316,7 +335,7 @@
   N.sanear = D => {
     const P = N.padrao(), cfg = D.cfg || {};
     const gu = cfg.guardar || P.guardar;
-    const out = { cfg: { v: 1, nome: txt(cfg.nome || P.nome, 40), guardar: { pct: Math.min(100, Math.max(0, +gu.pct || 0)), inicial: int(gu.inicial) }, modelo: { rendas: [], contas: [] }, parcelas: [], metas: [] }, meses: {} };
+    const out = { cfg: { v: Math.max(1, Math.min(99, +cfg.v || 1)), nome: txt(cfg.nome || P.nome, 40), guardar: { pct: Math.min(100, Math.max(0, +gu.pct || 0)), inicial: int(gu.inicial) }, modelo: { rendas: [], contas: [] }, parcelas: [], metas: [] }, meses: {} };
     const m = cfg.modelo || P.modelo;
     out.cfg.modelo.rendas = (m.rendas || []).slice(0, 50).map(r => ({ n: txt(r.n), v: int(r.v, 0), dia: int(r.dia, 0, 31), va: r.va ? 1 : 0 }));
     out.cfg.modelo.contas = (m.contas || []).slice(0, 200).map(c => ({ c: cat(c.c), n: txt(c.n), v: int(c.v, 0), dia: int(c.dia, 0, 31) }));

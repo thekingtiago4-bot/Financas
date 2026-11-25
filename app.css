@@ -386,3 +386,10 @@ table.metas-tab td{padding:8px 6px;vertical-align:middle}
   .pl-barra .dica{flex-basis:100%;order:3}
 }
 
+
+.btn-ico:disabled{opacity:.35;cursor:default;background:none}
+.pl-falta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 12px;background:var(--amarBg);color:var(--amarTxt);border-bottom:1px solid var(--amar);font-size:.86rem}
+.pl-falta span{flex:1;min-width:160px}
+.planilha tr.folha td{opacity:.55}
+.planilha tr.folha .cel.val{text-decoration:line-through}
+.planilha tr.folha-nota td{font-size:.8rem;color:var(--mudo);font-style:italic}

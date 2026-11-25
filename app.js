@@ -1,7 +1,7 @@
 /* Finanças. · telas: tudo é janela flutuante (FN.J). Dados só neste aparelho (localStorage), com cópias automáticas. */
 (function () {
   'use strict';
-  const VERSAO = '0.2.0';
+  const VERSAO = '0.3.0';
   const N = FN.N, J = FN.J, G = FN.G, ico = FN.ico, brl = N.brl;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -28,12 +28,31 @@
       const k = N.hojeK(); D.meses[k] = N.criarMes(D, k, { base: 'modelo' });
       gravar();
     }
+    if (N.migrar(D)) { copia('Antes de atualizar os dados para a versão nova'); gravar(); }
+    estadoAtual = JSON.stringify(D);
     const ks = Object.keys(D.meses).sort(), hk = N.hojeK();
     sel = D.meses[hk] ? hk : (ks.filter(k => k <= hk).pop() || ks[ks.length - 1] || hk);
   }
+  /* ---------- desfazer / refazer (Ctrl+Z / Ctrl+Y): tudo desde que o app foi aberto ---------- */
+  let estadoAtual = null; const pilhaDesf = [], pilhaRef = [];
+  function registrar() {
+    const novo = JSON.stringify(D);
+    if (estadoAtual !== null && novo !== estadoAtual) { pilhaDesf.push(estadoAtual); if (pilhaDesf.length > 300) pilhaDesf.shift(); pilhaRef.length = 0; }
+    estadoAtual = novo; botoesDesfazer();
+  }
+  function voltarPara(de, para, rotulo) {
+    if (!de.length) { aviso(rotulo === 'Desfeito' ? 'Nada para desfazer' : 'Nada para refazer', '', 'warn', 2500); return; }
+    para.push(estadoAtual); estadoAtual = de.pop(); D = JSON.parse(estadoAtual);
+    erroGrav = !ls.set('fin:dados', Object.assign({ app: 'financas', salvo: Date.now() }, D)); statusSalvo();
+    desenharTudo(); botoesDesfazer();
+    aviso(rotulo, (rotulo === 'Desfeito' ? pilhaDesf.length + ' passo(s) ainda para voltar' : pilhaRef.length + ' passo(s) para refazer') + ' · Ctrl+Z desfaz, Ctrl+Y refaz', 'ok', 2500);
+  }
+  const desfazer = () => voltarPara(pilhaDesf, pilhaRef, 'Desfeito');
+  const refazer = () => voltarPara(pilhaRef, pilhaDesf, 'Refeito');
+  function botoesDesfazer() { const a = $('#bt-desf'), b = $('#bt-ref'); if (!a) return; a.disabled = !pilhaDesf.length; b.disabled = !pilhaRef.length; a.title = 'Desfazer (Ctrl+Z)' + (pilhaDesf.length ? ' · ' + pilhaDesf.length + ' passo(s)' : ''); }
   function gravar() {
     erroGrav = !ls.set('fin:dados', Object.assign({ app: 'financas', salvo: Date.now() }, D));
-    copiaDoDia(); statusSalvo();
+    copiaDoDia(); statusSalvo(); registrar();
   }
   function copia(motivo) {
     const l = ls.get('fin:copias', []);
@@ -182,10 +201,11 @@
     const c = N.calc(D, sel); if (!c) { b.classList.remove('sem-pad'); return semMes(b); }
     b.classList.add('sem-pad');
     const Mx = c.M, R0 = c.R, pct = v => R0 && v ? (v / R0 * 100).toFixed(1).replace('.', ',') + '%' : '';
-    const ativas = Mx.contas.filter(x => N.ativa(D, x)), npag = ativas.filter(x => x.pago).length;
+    const ativas = Mx.contas.filter(x => N.ativa(D, x)), npag = ativas.filter(x => x.pago).length, faltam = N.faltandoDoModelo(D, sel);
     const sec = (nome, chaveCor, total, linhas, extra) => '<tbody class="sec" style="--cor:' + CORES[chaveCor] + '"><tr class="sec-cab"><td colspan="3"><span class="pontinho"></span>' + nome + '</td><td class="r num">' + brl(total) + '</td><td class="r c-pct">' + pct(total) + '</td><td class="c-tipo">' + (extra || '') + '</td><td class="c-x"></td></tr>' + linhas + '</tbody>';
     let h = '<div class="pl-barra"><b>' + esc(N.nomeCurto(sel)) + '</b>' + (Mx.nome ? '<span class="tag t">' + esc(Mx.nome) + '</span>' : '') + '<span class="dica">' + npag + ' de ' + ativas.length + ' pagas · falta pagar ' + brl(c.aPagar) + '</span><span class="esp"></span>' +
       '<button class="btn mini" data-act="abrirJan" data-id="f.gasto">' + ico('carteira') + ' Lançar gasto</button><button class="btn mini" data-act="abrirJan" data-id="f.mes">' + ico('cal') + ' Novo mês</button></div>' +
+      (faltam.length ? '<div class="pl-falta">' + ico('alerta') + '<span>Falta' + (faltam.length > 1 ? 'm' : '') + ' do modelo: <b>' + faltam.map(x => esc(x.n)).join(', ') + '</b></span><button class="btn mini pri" data-act="recolocar">Recolocar</button></div>' : '') +
       '<div class="pl-wrap"><table class="planilha"><thead><tr><th class="c-ck" title="Já paga?">✓</th><th>Descrição</th><th class="r c-dia">Dia</th><th class="r c-val">Valor</th><th class="r c-pct">% renda</th><th class="c-tipo">Tipo</th><th class="c-x"></th></tr></thead>';
     h += sec('ENTRADAS', 'ENTRADAS', c.R, Mx.rendas.map(r => '<tr><td class="c-ck">' + (r.va ? '<span class="tag a">VA</span>' : '') + '</td>' +
       '<td><input class="cel" data-ch="rNome" data-id="' + r.id + '" data-foco="rn' + r.id + '" value="' + esc(r.n) + '" aria-label="Nome da entrada"></td>' +
@@ -195,7 +215,7 @@
       '<td><button class="bt-x" data-act="delRenda" data-id="' + r.id + '" aria-label="Excluir ' + esc(r.n) + '">' + ico('x') + '</button></td></tr>').join('') +
       '<tr class="add"><td></td><td colspan="6"><input class="cel" data-ch="addRenda" data-foco="add-renda" placeholder="+ nova entrada (digite o nome e Enter)" aria-label="Nova entrada"></td></tr>', c.VA ? '<span class="dica">VA ' + brl(c.VA) + ' à parte</span>' : '');
     N.CATS.forEach(cat => {
-      const l = Mx.contas.filter(x => x.c === cat), sub = N.soma(l.filter(x => N.ativa(D, x)), x => N.valConta(Mx, x));
+      const l = Mx.contas.filter(x => x.c === cat), sub = N.soma(l.filter(x => N.ativa(D, x)), x => N.valConta(Mx, x)), emFolha = N.soma(l.filter(x => !N.ativa(D, x)));
       h += sec(cat, cat, sub, l.map(x => {
         const at = N.ativa(D, x), gc = N.ehCartao(x) ? N.gastosCartao(Mx, x.n) : 0, v = N.valConta(Mx, x);
         return '<tr class="' + (x.pago ? 'pago' : '') + (at ? '' : ' folha') + (flashId === x.id ? ' flash' : '') + '"><td class="c-ck"><input type="checkbox" class="ck" data-ch="pago" data-id="' + x.id + '"' + (x.pago ? ' checked' : '') + ' aria-label="' + esc(x.n) + ' paga"></td>' +
@@ -203,9 +223,9 @@
           '<td><input class="cel dia" inputmode="numeric" data-ch="cDia" data-id="' + x.id + '" data-foco="cd' + x.id + '" value="' + (x.dia || '') + '" placeholder="–" aria-label="Dia de vencimento"></td>' +
           '<td><input class="cel val" inputmode="decimal" data-ch="cVal" data-id="' + x.id + '" data-foco="cv' + x.id + '" value="' + N.fmtIn(x.v) + '" placeholder="0,00" aria-label="Valor"' + (gc ? ' title="Fatura ' + brl(x.v) + ' + ' + brl(gc) + ' lançados = ' + brl(v) + '"' : '') + '>' + (gc ? '<small>+' + brl(gc) + ' lançados</small>' : '') + '</td>' +
           '<td class="r c-pct">' + (at ? pct(v) : '') + '</td>' +
-          '<td class="c-tipo">' + (x.pid ? '<span class="tag t">' + x.pk + '/' + x.tot + (at ? '' : ' · folha') + '</span>' : '<button class="tipo-bt" data-act="tipoConta" data-id="' + x.id + '" title="Clique para trocar">' + (x.rec === 0 ? 'só este mês' : 'todo mês') + '</button>') + '</td>' +
+          '<td class="c-tipo">' + (x.pid ? '<button class="tipo-bt" data-act="folhaTroca" data-id="' + x.pid + '" title="Clique para trocar: descontado em folha (só conta as parcelas) ou pago à parte (soma nas contas)">' + x.pk + '/' + x.tot + (at ? ' · à parte' : ' · em folha') + '</button>' : '<button class="tipo-bt" data-act="tipoConta" data-id="' + x.id + '" title="Clique para trocar">' + (x.rec === 0 ? 'só este mês' : 'todo mês') + '</button>') + '</td>' +
           '<td><button class="bt-x" data-act="delConta" data-id="' + x.id + '" title="Excluir deste mês" aria-label="Excluir ' + esc(x.n) + '">' + ico('x') + '</button></td></tr>';
-      }).join('') + '<tr class="add"><td></td><td colspan="6"><input class="cel" data-ch="addConta" data-cat="' + cat + '" data-foco="add-' + cat + '" placeholder="+ adicionar em ' + N.CAT_NOME[cat].toLowerCase() + ' (digite o nome e Enter)" aria-label="Nova conta em ' + N.CAT_NOME[cat] + '"></td></tr>');
+      }).join('') + (emFolha ? '<tr class="info folha-nota"><td></td><td colspan="2">Descontado em folha (já sai do salário, não soma aqui)</td><td class="r num">' + brl(emFolha) + '</td><td class="c-pct"></td><td class="c-tipo"></td><td></td></tr>' : '') + '<tr class="add"><td></td><td colspan="6"><input class="cel" data-ch="addConta" data-cat="' + cat + '" data-foco="add-' + cat + '" placeholder="+ adicionar em ' + N.CAT_NOME[cat].toLowerCase() + ' (digite o nome e Enter)" aria-label="Nova conta em ' + N.CAT_NOME[cat] + '"></td></tr>');
     });
     const ng = Mx.gastos.filter(g => g.f === 'pix' || g.f === 'din').length;
     h += sec('DIA A DIA', 'DIA A DIA', c.Gv, '<tr class="info"><td></td><td>Pix, débito e dinheiro (' + ng + ') <button class="link" data-act="jan" data-id="gastos">ver / lançar</button></td><td></td><td class="r num">' + brl(c.Gv) + '</td><td class="r c-pct">' + pct(c.Gv) + '</td><td class="c-tipo"></td><td></td></tr>' +
@@ -369,7 +389,7 @@
     b.innerHTML = resumoP.innerHTML + '<p class="dica">Parcelas entram sozinhas em cada mês criado, com o número certo (3/15, 4/15…). “Em folha” = já descontado do salário: aparece, mas não soma nas contas.</p>' +
       ps.map(p => { const n = N.numParcela(p, sel); return '<div class="secao"><div class="linha"><label class="rot">Nome<input class="campo" data-ch="pNome" data-id="' + p.id + '" data-foco="pn' + p.id + '" value="' + esc(p.n) + '"></label><label class="rot" style="flex:0 0 110px">Parcela (R$)<input class="campo" inputmode="decimal" data-ch="pVal" data-id="' + p.id + '" data-foco="pv' + p.id + '" value="' + N.fmtIn(p.v) + '"></label></div>' +
         '<div class="linha" style="align-items:center"><span class="dica" style="flex:1 1 160px">' + (n >= p.p0 && n <= p.tot ? 'Em ' + N.curto(sel) + ': parcela ' + n + ' de ' + p.tot : n > p.tot ? 'Quitado' : 'Ainda não começou') + ' · última em ' + N.curto(N.fimParcela(p)) + '</span>' + chave('folha', 'Em folha', p.folha, 'data-ch="pFolha" data-id="' + p.id + '"') + '<button class="bt-x" data-act="delParc" data-id="' + p.id + '" title="Excluir parcelamento" aria-label="Excluir ' + esc(p.n) + '">' + ico('lixo') + '</button></div></div>'; }).join('') +
-      '<form class="secao" data-form="parc"><h4>Novo parcelamento ou empréstimo</h4><label class="rot">Nome<input class="campo" name="n" required placeholder="Ex.: Empréstimo CLT IV, celular"></label><div class="linha"><label class="rot">Valor da parcela<input class="campo" name="v" inputmode="decimal" required placeholder="0,00"></label><label class="rot">Categoria<select class="campo" name="c">' + catOpts('EMPRÉSTIMOS') + '</select></label></div>' +
+      '<div class="secao"><h4>Bagunçou?</h4><p class="dica">Volta os 4 parcelamentos do começo (geladeira e empréstimos CLT, com os CLT descontados em folha), com o número certo de cada parcela. Os outros valores não mudam.</p><button class="btn mini perigo" data-act="resetParc">' + ico('reset') + ' Voltar empréstimos ao original</button></div>' + '<form class="secao" data-form="parc"><h4>Novo parcelamento ou empréstimo</h4><label class="rot">Nome<input class="campo" name="n" required placeholder="Ex.: Empréstimo CLT IV, celular"></label><div class="linha"><label class="rot">Valor da parcela<input class="campo" name="v" inputmode="decimal" required placeholder="0,00"></label><label class="rot">Categoria<select class="campo" name="c">' + catOpts('EMPRÉSTIMOS') + '</select></label></div>' +
       '<div class="linha"><label class="rot">Parcela em ' + N.curto(sel) + '<input class="campo" name="k" inputmode="numeric" required placeholder="Ex.: 1"></label><label class="rot">Total de parcelas<input class="campo" name="tot" inputmode="numeric" required placeholder="Ex.: 18"></label><label class="rot">Dia<input class="campo" name="dia" inputmode="numeric" placeholder="–"></label></div><button class="btn pri">' + ico('mais') + ' Adicionar</button></form>';
   };
 
@@ -467,7 +487,7 @@
   }
   function montarNav() {
     $$('.mes-nav .btn-ico')[0].innerHTML = ico('esq'); $$('.mes-nav .btn-ico')[1].innerHTML = ico('dir');
-    $('#bt-buscar').innerHTML = ico('busca'); $('#bt-novo').innerHTML = ico('mais') + ' Novo'; $('#fab').innerHTML = ico('mais');
+    $('#bt-buscar').innerHTML = ico('busca'); $('#bt-desf').innerHTML = ico('desfazer'); $('#bt-ref').innerHTML = ico('refazer'); botoesDesfazer(); $('#bt-novo').innerHTML = ico('mais') + ' Novo'; $('#fab').innerHTML = ico('mais');
     $('#busca-ico').innerHTML = ico('busca');
   }
   function aplicarTema() { document.documentElement.setAttribute('data-tema', pref.tema === 'claro' ? 'claro' : 'escuro'); const m = $('meta[name=theme-color]'); if (m) m.content = pref.tema === 'claro' ? '#0F4B55' : '#051619'; }
@@ -496,6 +516,8 @@
     add('Ações', pref.tema === 'escuro' ? 'sol' : 'lua', pref.tema === 'escuro' ? 'Modo dia' : 'Modo noturno', 'tema', () => ACT.tema());
     add('Ações', 'reset', 'Voltar as janelas ao padrão', '', () => J.resetar());
     add('Ações', 'disco', 'Baixar cópia dos dados', 'backup', () => ACT.baixar());
+    add('Ações', 'desfazer', 'Desfazer a última mudança', 'Ctrl+Z', () => desfazer());
+    add('Ações', 'refazer', 'Refazer', 'Ctrl+Y', () => refazer());
     add('Ações', 'disco', 'Dinheiro guardado', brl(N.saldoGuardado(D, sel)) + ' · histórico', () => ACT.verGuardado());
     add('Ações', 'menos', 'Tirar do guardado (emergência)', '', () => abrirJan('f.gasto', { f: 'emerg' }));
     JANS.filter(d => !d.form).forEach(d => add('Janelas', d.i, d.t, 'abrir', () => abrirJan(d.id)));
@@ -559,6 +581,10 @@
     calDia: b => { const d = +b.dataset.d; calDia = calDia === d ? null : d; J.visiveis().filter(w => w.dataset.tipo === 'cal').forEach(w => desenharJan(w)); },
     verMeta: b => verMeta(b.dataset.id),
     verGuardado: () => abrirJan('guardado'),
+    desfazer: () => desfazer(), refazer: () => refazer(),
+    recolocar: () => { const f = N.faltandoDoModelo(D, sel); f.forEach(c => M().contas.push({ id: N.uid(), c: c.c, n: c.n, v: c.v, dia: c.dia || 0, pago: false, rec: 1 })); mudou({ ping: true }); aviso('Recolocado: ' + f.map(c => c.n).join(', '), 'Com o valor do modelo. Os outros valores do mês não mudaram.', 'ok'); },
+    folhaTroca: b => { const p = N.parcela(D, b.dataset.id); if (!p) return; p.folha = !p.folha; mudou({ ping: true }); aviso(p.n + (p.folha ? ': descontado em folha' : ': pago à parte'), p.folha ? 'Só conta as parcelas; não sai de novo do dinheiro do mês.' : 'Agora soma nas contas do mês.', 'ok', 4000); },
+    resetParc: b => { if (!confirmar(b, 'Voltar ao original?')) return; copia('Antes de voltar os empréstimos ao original'); N.resetarParcelas(D); mudou({ ping: true }); aviso('Empréstimos de volta ao original', 'Geladeira 15x, CLT I 18x, CLT II 7x e CLT III 18x (os CLT descontados em folha). Se não era isso: Ctrl+Z.', 'ok', 8000); },
     gAuto: () => { M().guardar = null; mudou({ ping: true }); },
     perg: b => perguntar(b.dataset.q),
     delConta: b => { if (!confirmar(b, 'Excluir?')) return; M().contas = M().contas.filter(x => x.id !== b.dataset.id); mudou({ ping: true }); },
@@ -739,6 +765,10 @@
   document.addEventListener('keydown', e => {
     if (e.key === 'Enter' && e.target.closest && e.target.closest('[data-act]') && e.target.matches('.marca')) { e.target.click(); return; }
     const k = e.key.toLowerCase();
+    if ((e.ctrlKey || e.metaKey) && (k === 'z' || k === 'y') && !e.altKey) {
+      const a = document.activeElement, digitando = a && /^(INPUT|TEXTAREA)$/.test(a.tagName) && !/^(checkbox|radio)$/.test(a.type) && a.value !== a.defaultValue;
+      if (!digitando) { e.preventDefault(); if (a && a.blur && a.tagName === 'INPUT') a.blur(); if (k === 'y' || e.shiftKey) refazer(); else desfazer(); return; }
+    }
     if ((e.ctrlKey || e.metaKey) && (k === 'l' || k === 'k')) { e.preventDefault(); if ($('#busca').hidden) buscar(); else fecharBusca(); return; }
     if (!$('#busca').hidden) {
       if (e.key === 'Escape') { e.preventDefault(); fecharBusca(); }

@@ -1,6 +1,6 @@
 /* Finanças. · service worker: rede primeiro (sempre a versão nova), cópia guardada quando estiver sem internet.
    Troque o nome do cache a cada versão publicada. */
-const CACHE = 'fin-app-v002';
+const CACHE = 'fin-app-v003';
 const ARQUIVOS = ['./', 'index.html', 'tema.js', 'app.css', 'fontes.css', 'nucleo.js', 'janelas.js', 'graficos.js', 'app.js', 'manifest.webmanifest',
   'icons/icone.svg', 'icons/marca.png', 'icons/icon-192.png', 'icons/icon-512.png', 'icons/icon-maskable-512.png', 'icons/apple-touch-icon.png',
   'fonts/Barlow-400.woff2', 'fonts/Barlow-500.woff2', 'fonts/Barlow-600.woff2', 'fonts/BarlowSemiCondensed-600.woff2', 'fonts/BarlowSemiCondensed-700.woff2'];
