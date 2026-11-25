@@ -32,38 +32,27 @@
 </div>
 
 <div class="app" id="app">
-  <aside class="rail" id="rail">
-    <div class="marca" data-act="tela" data-t="painel" role="button" tabindex="0" title="Ir para o Painel">
-      <img src="icons/marca.png" width="38" height="38" alt="">
-      <div class="marca-txt"><b>Finanças.</b><span>Seu dinheiro,<br>mês a mês</span></div>
-    </div>
-    <nav class="nav" id="nav" aria-label="Seções"></nav>
-    <div class="resumo">
-      <dl id="resumo"></dl>
-      <div class="salvo" id="salvo"><i></i><span>Abrindo…</span></div>
-      <div class="autoria">Desenvolvido por <b>Tiago</b><br>© 2026 Finanças. · uso pessoal<br><span id="versao"></span></div>
-    </div>
-  </aside>
-  <button class="rail-seta" id="bt-rail" type="button" data-act="rail" aria-label="Esconder o menu lateral" title="Esconder / mostrar o menu lateral">‹</button>
-  <div class="principal">
-    <header class="topo" id="topo">
+  <header class="topo" id="topo">
+    <div class="topo-l1">
+      <button class="marca-topo" type="button" data-act="jan" data-id="resumo" title="Resumo do mês"><img src="icons/marca.png" width="30" height="30" alt=""><b>Finanças.</b></button>
       <div class="mes-nav">
         <button class="btn-ico" type="button" data-act="mesAnt" aria-label="Mês anterior" title="Mês anterior"></button>
         <button class="mes-lbl" type="button" data-act="menuMes" id="mes-lbl" title="Escolher ou criar mês"></button>
         <button class="btn-ico" type="button" data-act="mesProx" aria-label="Próximo mês" title="Próximo mês"></button>
       </div>
-      <div class="metas-topo" id="metas-topo" aria-label="Metas"></div>
       <div class="topo-dir">
-        <button class="chip-livre" type="button" id="chip-livre" data-act="abrirJan" data-id="mes.livre" title="Quanto ainda posso gastar este mês"></button>
-        <button class="btn mini" type="button" data-act="buscar" id="bt-buscar" title="Buscar (Ctrl+L)"></button>
-        <button class="btn-ico" type="button" data-act="menuJanelas" id="bt-janelas" title="Janelas desta tela" aria-label="Janelas desta tela"></button>
+        <button class="chip-livre" type="button" id="chip-livre" data-act="jan" data-id="resumo" title="Quanto ainda posso gastar este mês"></button>
+        <button class="btn mini pri" type="button" data-act="menuCriar" id="bt-novo"></button>
+        <button class="btn-ico" type="button" data-act="buscar" id="bt-buscar" title="Buscar (Ctrl+L)" aria-label="Buscar"></button>
         <button class="btn-ico" type="button" data-act="tema" id="bt-tema" title="Modo noturno / modo dia" aria-label="Trocar tema"></button>
+        <span class="salvo" id="salvo" title=""><i></i><span>Abrindo…</span></span>
       </div>
-    </header>
-    <main class="mesa" id="mesa" aria-live="off"></main>
-  </div>
+    </div>
+    <nav class="menu" id="menu" aria-label="Janelas"></nav>
+  </header>
+  <main class="mesa" id="mesa" aria-live="off"></main>
 </div>
-<nav class="abas-cel" id="abas-cel" aria-label="Seções"></nav>
+<button class="fab" type="button" data-act="menuCriar" id="fab" aria-label="Criar"></button>
 <div class="avisos" id="avisos" aria-live="polite"></div>
 <div class="busca-fundo" id="busca" hidden>
   <div class="busca" role="dialog" aria-label="Buscar">

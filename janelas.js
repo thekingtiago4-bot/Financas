@@ -34,8 +34,8 @@
   };
   const ico = (n, cls) => '<svg class="ico' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (P[n] || '') + '</svg>';
 
-  const J = {}; const MINW = 240, MINH = 130, CHAVE = 'fin:jan';
-  let mesa, defs = {}, ordem = [], L = {}, ztop = 10, tela = null, aoDesenhar = () => {}, rt;
+  const J = {}; const MINW = 240, MINH = 130, CHAVE = 'fin:jan2';
+  let mesa, defs = {}, ordem = [], L = {}, ztop = 10, aoDesenhar = () => {}, aoMudar = () => {}, rt;
   const mq = matchMedia('(max-width: 860px)');
   J.empilhado = () => mq.matches;
   const ler = () => { try { return JSON.parse(localStorage.getItem(CHAVE)) || {}; } catch (e) { return {}; } };
@@ -43,7 +43,7 @@
   const st = id => (L[id] = L[id] || {});
 
   J.init = (el, lista, o) => {
-    mesa = el; aoDesenhar = o.desenhar; L = ler();
+    mesa = el; aoDesenhar = o.desenhar; aoMudar = o.mudou || aoMudar; L = ler();
     lista.forEach((d, i) => { defs[d.id] = Object.assign({ ordem: i }, d); ordem.push(d.id); });
     ztop = Math.max(10, ...Object.values(L).map(s => s.z || 0));
     if (ztop > 4000) { const ids = Object.keys(L).sort((a, b) => (L[a].z || 0) - (L[b].z || 0)); ids.forEach((id, i) => { L[id].z = 10 + i; }); ztop = 10 + ids.length; salvar(); }
@@ -57,12 +57,12 @@
   J.todas = () => [...mesa.querySelectorAll('.jan')];
   J.visiveis = () => J.todas().filter(w => !w.hidden);
   J.def = id => defs[id];
-  J.porTela = t => ordem.filter(id => defs[id].tela === t);
+  J.ids = () => ordem.filter(id => !defs[id].form);
   J.aberta = id => { const w = mesa.querySelector('.jan[data-id="' + id + '"]'); return !!(w && !w.hidden); };
 
   function criar(id) {
     const d = defs[id], w = document.createElement('section');
-    w.className = 'jan' + (d.tela ? '' : ' jan-form'); w.dataset.id = id; w.dataset.tipo = d.tipo; w.setAttribute('aria-label', d.t);
+    w.className = 'jan' + (d.form ? ' jan-form' : ''); w.dataset.id = id; w.dataset.tipo = d.tipo; w.setAttribute('aria-label', d.t);
     w.innerHTML = '<header class="jan-cab"><span class="jan-ico">' + ico(d.i) + '</span><b class="jan-tit"></b><span class="jan-extra"></span>' +
       '<button type="button" class="jan-bt bt-pin" data-j="pin" title="Fixar no lugar (trava o arrastar; redimensionar continua)" aria-label="Fixar janela">' + ico('pin') + '</button>' +
       '<button type="button" class="jan-bt" data-j="min" title="Recolher / abrir (ou duplo clique no título)" aria-label="Recolher janela">' + ico('menos') + '</button>' +
@@ -74,7 +74,7 @@
     return w;
   }
   J.el = id => mesa.querySelector('.jan[data-id="' + id + '"]') || criar(id);
-  J.criarTodas = () => ordem.forEach(id => { if (defs[id].tela) J.el(id); });
+  J.criarTodas = () => ordem.forEach(id => { if (!defs[id].form) J.el(id); });
 
   function geom(id) {
     const d = defs[id], s = L[id] || {}, W = mesa.clientWidth, H = mesa.clientHeight;
@@ -91,38 +91,39 @@
     w.classList.toggle('fixa', !!s.pin); w.classList.toggle('recolhida', !!s.min);
     const pin = w.querySelector('.bt-pin'); pin.classList.toggle('on', !!s.pin); pin.setAttribute('aria-pressed', s.pin ? 'true' : 'false');
     visivel(w);
-    if (J.empilhado()) { w.style.left = w.style.top = w.style.width = w.style.height = ''; w.style.zIndex = ''; return; }
+    if (J.empilhado()) { w.style.left = w.style.top = w.style.width = w.style.height = ''; w.style.zIndex = ''; w.style.order = defs[id].form ? -999999 : -(s.z || 0); return; }
     if (w.hidden) return;
     const g = geom(id);
     w.style.left = g.x + 'px'; w.style.top = g.y + 'px'; w.style.width = g.w + 'px'; w.style.height = s.min ? 'auto' : g.h + 'px';
-    w.style.zIndex = s.z || (defs[id].tela ? 1 : 50);
+    w.style.zIndex = s.z || (defs[id].form ? 50 : 1);
   }
   function visivel(w) {
     const d = defs[w.dataset.id], s = L[w.dataset.id] || {};
-    w.hidden = d.tela ? (d.tela !== tela || !!s.fechada) : !w._aberta;
+    w.hidden = d.form ? !w._aberta : (s.fechada != null ? !!s.fechada : !d.aberta);
   }
-  J.tela = t => { tela = t; J.todas().forEach(w => { const era = w.hidden; visivel(w); if (era && !w.hidden) aplicar(w); }); };
+  J.topo = () => { let m = null; J.visiveis().forEach(w => { if (!m || (+w.style.zIndex || 0) > (+m.style.zIndex || 0)) m = w; }); return m; };
   J.frente = w => {
     J.todas().forEach(x => x.classList.toggle('foco', x === w));
-    if (J.empilhado() || +w.style.zIndex === ztop) return;
-    ztop++; w.style.zIndex = ztop; st(w.dataset.id).z = ztop; salvar();
+    if (+w.style.zIndex === ztop && st(w.dataset.id).z === ztop) return;
+    ztop++; if (!J.empilhado()) w.style.zIndex = ztop; else w.style.order = -ztop; st(w.dataset.id).z = ztop; salvar(); aoMudar();
   };
   J.abrir = (id, ctx) => {
     const w = J.el(id), d = defs[id];
-    if (d.tela) st(id).fechada = false; else w._aberta = true;
+    if (!d.form) st(id).fechada = false; else w._aberta = true;
     if (ctx !== undefined) w.ctx = ctx;
     st(id).min = false; aplicar(w); J.frente(w);
-    aoDesenhar(w, true);
-    if (J.empilhado()) w.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    aoDesenhar(w, true); aoMudar();
+    if (J.empilhado()) setTimeout(() => w.scrollIntoView({ behavior: 'smooth', block: 'start' }), 30);
     const f = w.querySelector('.jan-corpo input:not([type=checkbox]):not([type=radio]),.jan-corpo select,.jan-corpo textarea');
-    if (f && !d.tela && !J.empilhado()) setTimeout(() => f.focus(), 30);
+    if (f && d.form && !J.empilhado()) setTimeout(() => f.focus(), 30);
     return w;
   };
-  J.fechar = id => { const w = J.el(id); if (defs[id].tela) st(id).fechada = true; else w._aberta = false; salvar(); visivel(w); };
-  J.alternarAberta = id => { if (J.aberta(id)) J.fechar(id); else J.abrir(id); };
+  J.fechar = id => { const w = J.el(id); if (!defs[id].form) st(id).fechada = true; else w._aberta = false; salvar(); visivel(w); aoMudar(); };
+  /* botão do menu: fechada → abre; aberta atrás de outra → traz para a frente; já na frente → fecha */
+  J.alternar = id => { if (!J.aberta(id)) J.abrir(id); else if (J.topo() !== J.el(id) && !J.empilhado()) J.frente(J.el(id)); else J.fechar(id); };
   J.resetar = t => {
-    ordem.filter(id => !t || defs[id].tela === t).forEach(id => { const z = L[id] && L[id].z; delete L[id]; if (z) st(id).z = z; });
-    salvar(); J.todas().forEach(aplicar); J.visiveis().forEach(w => aoDesenhar(w));
+    ordem.forEach(id => { delete L[id]; });
+    salvar(); J.todas().forEach(aplicar); J.visiveis().forEach(w => aoDesenhar(w)); aoMudar();
   };
   function alternar(w, campo) {
     const s = st(w.dataset.id);

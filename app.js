@@ -1,7 +1,7 @@
 /* Finanças. · telas: tudo é janela flutuante (FN.J). Dados só neste aparelho (localStorage), com cópias automáticas. */
 (function () {
   'use strict';
-  const VERSAO = '0.1.0';
+  const VERSAO = '0.2.0';
   const N = FN.N, J = FN.J, G = FN.G, ico = FN.ico, brl = N.brl;
   const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -52,37 +52,29 @@
   const achar = (lista, id) => lista.find(x => x.id === id);
 
   /* ================= janelas ================= */
-  const TELAS = [['painel', 'Painel', 'casa'], ['mes', 'Contas do mês', 'lista'], ['metas', 'Metas', 'alvo'], ['assist', 'Assistente', 'brilho'], ['ajustes', 'Ajustes', 'ajuste']];
-  const CRIAR = [['f.mes', 'Novo mês', 'cal'], ['f.gasto', 'Lançar gasto', 'carteira'], ['f.conta', 'Nova conta', 'lista'], ['f.renda', 'Nova renda', 'moeda'], ['f.meta', 'Nova meta', 'alvo']];
+  const MENU = [['contas', 'Contas', 'lista'], ['gastos', 'Gastos', 'carteira'], ['cal', 'Calendário', 'cal'], ['metas', 'Metas', 'alvo'], ['guardado', 'Guardado', 'disco'], ['assist', 'Assistente', 'brilho'], ['relat', 'Relatórios', 'barras'], ['parc', 'Parcelas', 'cartao'], ['ajustes', 'Ajustes', 'ajuste']];
+  const CRIAR = [['f.gasto', 'Lançar gasto', 'carteira'], ['f.conta', 'Nova conta', 'lista'], ['f.renda', 'Nova renda', 'moeda'], ['f.mes', 'Novo mês', 'cal'], ['f.meta', 'Nova meta', 'alvo']];
+  /* id, tipo, título, ícone, posição [x, y, largura, altura] em fração da tela, abre sozinha na 1ª vez */
   const JANS = [
-    ['painel.resumo', 'painel', 'resumo', 'Resumo do mês', 'carteira', [.008, .015, .47, .36]],
-    ['painel.alertas', 'painel', 'alertas', 'Assistente', 'brilho', [.486, .015, .25, .58]],
-    ['painel.cal', 'painel', 'cal', 'Calendário', 'cal', [.744, .015, .248, .58]],
-    ['painel.ano', 'painel', 'ano', 'Visão do ano', 'barras', [.008, .39, .47, .595]],
-    ['painel.cats', 'painel', 'cats', 'Para onde vai o dinheiro', 'pizza', [.486, .61, .25, .375]],
-    ['painel.parc', 'painel', 'parc', 'Parcelas e empréstimos', 'cartao', [.744, .61, .248, .375]],
-    ['mes.contas', 'mes', 'contas', 'Contas do mês', 'lista', [.008, .015, .48, .97]],
-    ['mes.rendas', 'mes', 'rendas', 'Rendas', 'moeda', [.496, .015, .245, .40]],
-    ['mes.gastos', 'mes', 'gastos', 'Gastos do dia a dia', 'carteira', [.496, .43, .245, .555]],
-    ['mes.cal', 'mes', 'cal', 'Calendário', 'cal', [.75, .015, .242, .55]],
-    ['mes.livre', 'mes', 'livre', 'Quanto ainda posso gastar', 'alvo', [.75, .58, .242, .405]],
-    ['metas.guardado', 'metas', 'guardado', 'Dinheiro guardado', 'disco', [.008, .015, .30, .97]],
-    ['metas.lista', 'metas', 'metas', 'Minhas metas', 'alvo', [.316, .015, .38, .97]],
-    ['metas.calc', 'metas', 'calc', 'Em quanto tempo eu chego lá?', 'calc', [.704, .015, .288, .56]],
-    ['metas.evol', 'metas', 'evol', 'Evolução das metas', 'linha', [.704, .59, .288, .395]],
-    ['assist.chat', 'assist', 'chat', 'Assistente', 'brilho', [.008, .015, .5, .97]],
-    ['assist.tend', 'assist', 'tend', 'Tendência dos gastos', 'linha', [.518, .015, .474, .55]],
-    ['assist.eco', 'assist', 'eco', 'Onde economizar', 'folha', [.518, .58, .474, .405]],
-    ['ajustes.geral', 'ajustes', 'geral', 'Aparência e uso', 'ajuste', [.008, .015, .32, .55]],
-    ['ajustes.dados', 'ajustes', 'dados', 'Dados e cópias', 'disco', [.008, .58, .32, .405]],
-    ['ajustes.modelo', 'ajustes', 'modelo', 'Modelo do mês (contas padrão)', 'lista', [.338, .015, .34, .97]],
-    ['ajustes.parc', 'ajustes', 'parcAdm', 'Parcelamentos e empréstimos', 'cartao', [.688, .015, .304, .97]],
-    ['f.mes', null, 'fMes', 'Novo mês', 'cal', { w: 420, h: 520 }],
-    ['f.gasto', null, 'fGasto', 'Lançar gasto', 'carteira', { w: 380, h: 440 }],
-    ['f.conta', null, 'fConta', 'Nova conta', 'lista', { w: 420, h: 560 }],
-    ['f.renda', null, 'fRenda', 'Nova renda', 'moeda', { w: 380, h: 420 }],
-    ['f.meta', null, 'fMeta', 'Nova meta', 'alvo', { w: 460, h: 640 }]
-  ].map(([id, tela, tipo, t, i, pos]) => ({ id, tela, tipo, t, i, pos }));
+    ['contas', 'contas', 'Contas do mês', 'lista', [.008, .02, .615, .96], 1],
+    ['resumo', 'resumo', 'Resumo', 'casa', [.632, .02, .36, .44], 1],
+    ['cal', 'cal', 'Calendário', 'cal', [.632, .48, .36, .5], 1],
+    ['gastos', 'gastos', 'Gastos do dia a dia', 'carteira', [.36, .05, .3, .88]],
+    ['metas', 'metas', 'Metas', 'alvo', [.16, .05, .56, .8]],
+    ['calc', 'calc', 'Em quanto tempo eu chego lá?', 'calc', [.5, .08, .34, .8]],
+    ['guardado', 'guardado', 'Dinheiro guardado', 'disco', [.3, .05, .34, .88]],
+    ['assist', 'chat', 'Assistente', 'brilho', [.56, .03, .42, .94]],
+    ['relat', 'relat', 'Relatórios', 'barras', [.1, .04, .6, .92]],
+    ['parc', 'parcAdm', 'Parcelas e empréstimos', 'cartao', [.3, .05, .4, .88]],
+    ['ajustes', 'ajustes', 'Ajustes', 'ajuste', [.33, .04, .36, .92]],
+    ['modelo', 'modelo', 'Modelo do mês (contas padrão)', 'lista', [.2, .04, .48, .92]],
+    ['f.mes', 'fMes', 'Novo mês', 'cal', { w: 420, h: 520 }],
+    ['f.gasto', 'fGasto', 'Lançar gasto', 'carteira', { w: 380, h: 440 }],
+    ['f.conta', 'fConta', 'Nova conta', 'lista', { w: 420, h: 560 }],
+    ['f.renda', 'fRenda', 'Nova renda', 'moeda', { w: 380, h: 420 }],
+    ['f.meta', 'fMeta', 'Nova meta', 'alvo', { w: 460, h: 640 }]
+  ].map(([id, tipo, t, i, pos, aberta]) => ({ id, tipo, t, i, pos, aberta: !!aberta, form: id.startsWith('f.') }));
+  const ANTIGAS = { painel: 'resumo', mes: 'contas', assist: 'assist', ajustes: 'ajustes', metas: 'metas' };
 
   function desenharJan(w, forcar) {
     if (w.hidden || w.classList.contains('recolhida')) return;
@@ -94,20 +86,12 @@
     if (foco) { const n = corpo.querySelector('[data-foco="' + foco + '"]'); if (n) { n.focus(); if (pos && n.setSelectionRange) try { n.setSelectionRange(pos[0], pos[1]); } catch (e) { /* campo numérico */ } } }
   }
   function desenharTudo() {
-    topo(); railResumo();
+    topo();
     J.visiveis().forEach(w => desenharJan(w));
     if (pendFoco) { const n = $('[data-foco="' + pendFoco + '"]'); pendFoco = null; if (n) { n.focus(); n.select && n.select(); } }
   }
   const tit = (w, t) => { w.querySelector('.jan-tit').textContent = t; };
-  function irTela(t) {
-    if (!TELAS.some(x => x[0] === t)) t = 'painel';
-    pref.tela = t; salvarPref(); fecharPop();
-    J.tela(t);
-    $$('[data-act="tela"]').forEach(b => { if (b.dataset.t === t) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current'); });
-    $('.marca').removeAttribute('aria-current');
-    desenharTudo();
-    if (J.empilhado()) $('#mesa').scrollTop = 0;
-  }
+  function irTela(t) { abrirJan(ANTIGAS[t] || t); }
 
   /* ================= peças ================= */
   const kpi = (r, v, cls = '') => '<div class="kpi ' + cls + '"><small>' + esc(r) + '</small><b>' + brl(v) + '</b></div>';
@@ -147,15 +131,12 @@
   /* ================= conteúdo das janelas ================= */
   const R = {};
   R.resumo = (b, w) => {
-    tit(w, 'Resumo de ' + N.nomeCurto(sel));
+    tit(w, 'Resumo · ' + N.nomeCurto(sel));
     const c = N.calc(D, sel); if (!c) return semMes(b);
-    const lv = nivel(c), restam = N.diasRestantes(sel);
-    b.innerHTML = '<div class="kpis">' + kpi('Renda do mês', c.R) + kpi('Contas', c.C) + kpi('Dia a dia', c.Gv) + kpi('Sobra', c.sobra, c.sobra < 0 ? 'bad' : '') + kpi('Guardado (' + (c.Gauto ? c.pct + '%' : 'fixo') + ')', c.G) + kpi('Metas do mês', c.res) + kpi('Livre para gastar', c.livre, 'destaque ' + (lv === 'ok' ? '' : lv)) + '</div>' + usoBar(c) +
-      '<p class="dica">Pagas ' + brl(c.pagas) + ' de ' + brl(c.C) + ' · faltam ' + brl(c.aPagar) + (c.VA ? ' · VA: ' + brl(c.vaSaldo) : '') + ' · Guardado total: ' + brl(N.saldoGuardado(D, sel)) + (c.Ge ? ' (saíram ' + brl(c.Ge) + ' este mês)' : '') + (sel === N.hojeK() ? ' · ' + restam + (restam > 1 ? ' dias' : ' dia') + ' para acabar o mês' : '') + (c.M.nome ? ' · “' + esc(c.M.nome) + '”' : '') + '</p>';
-  };
-  R.alertas = b => {
-    const ms = N.analisar(D, sel);
-    b.innerHTML = '<div class="msgs">' + ms.slice(0, 8).map(msgHTML).join('') + '</div><button class="btn mini" data-act="tela" data-t="assist">' + ico('brilho') + ' Conversar com o assistente</button>';
+    const lv = nivel(c), restam = N.diasRestantes(sel), ms = N.analisar(D, sel).filter(m => m.id !== 'livre' && m.lvl !== 'info').slice(0, 2);
+    b.innerHTML = '<div class="res-livre"><div><span class="dica">Livre para gastar</span><br><span class="grande ' + (lv === 'bad' ? 'neg' : lv === 'ok' ? 'pos' : '') + '">' + brl(c.livre) + '</span></div>' + (sel === N.hojeK() && c.livre > 0 && restam ? '<span class="dica">≈ <b>' + brl(Math.floor(c.livre / restam)) + '</b> por dia · faltam ' + restam + ' dias</span>' : '') + '</div>' + usoBar(c) +
+      '<dl class="res-linhas"><dt>Entradas</dt><dd class="pos">' + brl(c.R) + '</dd><dt>Contas</dt><dd>− ' + brl(c.C) + '</dd><dt>Dia a dia</dt><dd>− ' + brl(c.Gv) + '</dd><dt>Guardado (' + (c.Gauto ? c.pct + '%' : 'fixo') + ')</dt><dd>− ' + brl(c.G) + '</dd>' + (c.res ? '<dt>Metas do mês</dt><dd>− ' + brl(c.res) + '</dd>' : '') + '<dt class="tot">Livre</dt><dd class="tot ' + (c.livre < 0 ? 'neg' : '') + '">' + brl(c.livre) + '</dd></dl>' +
+      (ms.length ? '<div class="msgs">' + ms.map(msgHTML).join('') + '</div>' : '') + '<button class="link" data-act="jan" data-id="assist">Ver tudo no assistente →</button>';
   };
   R.cal = (b, w) => {
     const k = sel, nd = N.dias(k), [y, m] = N.ym(k), ini = new Date(y, m - 1, 1).getDay(), hk = N.hojeK(), hd = new Date().getDate(), Mx = D.meses[k];
@@ -186,16 +167,6 @@
     }
     b.innerHTML = h;
   };
-  R.ano = b => {
-    const y = +sel.slice(0, 4), ks = N.MES.map((_, i) => N.mk(y, i + 1)), cs = ks.map(k => N.calc(D, k));
-    b.innerHTML = '<p class="dica">Renda × gastos (contas + dia a dia) em ' + y + '. A linha é o que sobrou em cada mês.</p><div class="graf"></div>';
-    G.barras($('.graf', b), { titulo: 'Visão do ano', rotulos: N.MES, destaque: +sel.slice(5) - 1, series: [{ n: 'Renda', cor: 'var(--aqua2)', v: cs.map(c => c ? c.R : null) }, { n: 'Gastos', cor: 'var(--ag)', v: cs.map(c => c ? c.gastoTotal : null) }], linha: { n: 'Sobra', cor: 'var(--tinta2)', v: cs.map(c => c ? c.sobra : null) } });
-  };
-  R.cats = b => {
-    const c = N.calc(D, sel); if (!c) return semMes(b);
-    b.innerHTML = '<div class="graf"></div>';
-    G.rosca($('.graf', b), Object.entries(c.porCat).sort((a, b2) => b2[1] - a[1]).map(([k, v], i) => ({ n: N.CAT_NOME[k] || k, v, cor: G.CORES[i % G.CORES.length] })));
-  };
   R.parc = b => {
     const ps = D.cfg.parcelas || [];
     if (!ps.length) { b.innerHTML = '<p class="vazio">Nenhum parcelamento. Adicione em Ajustes → Parcelamentos.</p>'; return; }
@@ -205,39 +176,48 @@
       return '<tr' + (p.folha ? ' class="folha" title="Descontado em folha: não entra nas contas"' : '') + '><td>' + esc(p.n) + '</td><td class="r num">' + brl(p.v) + '</td><td>' + (n >= p.p0 && n <= p.tot ? '<span class="tag t">' + n + '/' + p.tot + '</span>' : n > p.tot ? '<span class="tag">quitado</span>' : '<span class="tag">ainda não</span>') + '</td><td>' + N.curto(f) + '</td><td class="r num">' + brl(rest * p.v) + '</td></tr>';
     }).join('') + '<tr class="total"><td colspan="4">Ainda falta pagar</td><td class="r num">' + brl(tot) + '</td></tr></tbody></table></div>';
   };
+  const CORES = { ENTRADAS: 'var(--c-ent)', FIXAS: 'var(--c-fix)', PESSOAIS: 'var(--c-pes)', 'CARTÕES': 'var(--c-car)', 'EMPRÉSTIMOS': 'var(--c-emp)', DIVERSOS: 'var(--c-div)', 'DIA A DIA': 'var(--c-dia)', GUARDADO: 'var(--c-gua)' };
   R.contas = (b, w) => {
     tit(w, 'Contas de ' + N.nomeCurto(sel));
-    const c = N.calc(D, sel); if (!c) return semMes(b);
-    const Mx = c.M;
-    let h = '<div class="linha"><button class="btn mini pri" data-act="abrirJan" data-id="f.conta">' + ico('mais') + ' Nova conta</button><button class="btn mini" data-act="abrirJan" data-id="f.gasto">' + ico('carteira') + ' Lançar gasto</button></div>' +
-      '<div class="tab-wrap"><table><thead><tr><th title="Já paga?">Paga</th><th>Descrição</th><th class="r">Dia</th><th class="r">Valor</th><th></th><th></th></tr></thead><tbody>';
+    const c = N.calc(D, sel); if (!c) { b.classList.remove('sem-pad'); return semMes(b); }
+    b.classList.add('sem-pad');
+    const Mx = c.M, R0 = c.R, pct = v => R0 && v ? (v / R0 * 100).toFixed(1).replace('.', ',') + '%' : '';
+    const ativas = Mx.contas.filter(x => N.ativa(D, x)), npag = ativas.filter(x => x.pago).length;
+    const sec = (nome, chaveCor, total, linhas, extra) => '<tbody class="sec" style="--cor:' + CORES[chaveCor] + '"><tr class="sec-cab"><td colspan="3"><span class="pontinho"></span>' + nome + '</td><td class="r num">' + brl(total) + '</td><td class="r c-pct">' + pct(total) + '</td><td class="c-tipo">' + (extra || '') + '</td><td class="c-x"></td></tr>' + linhas + '</tbody>';
+    let h = '<div class="pl-barra"><b>' + esc(N.nomeCurto(sel)) + '</b>' + (Mx.nome ? '<span class="tag t">' + esc(Mx.nome) + '</span>' : '') + '<span class="dica">' + npag + ' de ' + ativas.length + ' pagas · falta pagar ' + brl(c.aPagar) + '</span><span class="esp"></span>' +
+      '<button class="btn mini" data-act="abrirJan" data-id="f.gasto">' + ico('carteira') + ' Lançar gasto</button><button class="btn mini" data-act="abrirJan" data-id="f.mes">' + ico('cal') + ' Novo mês</button></div>' +
+      '<div class="pl-wrap"><table class="planilha"><thead><tr><th class="c-ck" title="Já paga?">✓</th><th>Descrição</th><th class="r c-dia">Dia</th><th class="r c-val">Valor</th><th class="r c-pct">% renda</th><th class="c-tipo">Tipo</th><th class="c-x"></th></tr></thead>';
+    h += sec('ENTRADAS', 'ENTRADAS', c.R, Mx.rendas.map(r => '<tr><td class="c-ck">' + (r.va ? '<span class="tag a">VA</span>' : '') + '</td>' +
+      '<td><input class="cel" data-ch="rNome" data-id="' + r.id + '" data-foco="rn' + r.id + '" value="' + esc(r.n) + '" aria-label="Nome da entrada"></td>' +
+      '<td><input class="cel dia" inputmode="numeric" data-ch="rDia" data-id="' + r.id + '" data-foco="rd' + r.id + '" value="' + (r.dia || '') + '" placeholder="–" aria-label="Dia que cai"></td>' +
+      '<td><input class="cel val" inputmode="decimal" data-ch="rVal" data-id="' + r.id + '" data-foco="rv' + r.id + '" value="' + N.fmtIn(r.v) + '" placeholder="0,00" aria-label="Valor"></td><td class="r c-pct"></td>' +
+      '<td class="c-tipo"><button class="tipo-bt" data-act="rVaTroca" data-id="' + r.id + '" title="Clique para trocar">' + (r.va ? 'vale (VA)' : 'salário/renda') + '</button></td>' +
+      '<td><button class="bt-x" data-act="delRenda" data-id="' + r.id + '" aria-label="Excluir ' + esc(r.n) + '">' + ico('x') + '</button></td></tr>').join('') +
+      '<tr class="add"><td></td><td colspan="6"><input class="cel" data-ch="addRenda" data-foco="add-renda" placeholder="+ nova entrada (digite o nome e Enter)" aria-label="Nova entrada"></td></tr>', c.VA ? '<span class="dica">VA ' + brl(c.VA) + ' à parte</span>' : '');
     N.CATS.forEach(cat => {
       const l = Mx.contas.filter(x => x.c === cat), sub = N.soma(l.filter(x => N.ativa(D, x)), x => N.valConta(Mx, x));
-      h += '<tr class="grupo"><td colspan="3">' + N.CAT_NOME[cat].toUpperCase() + '</td><td class="r num">' + brl(sub) + '</td><td colspan="2" class="r"><button class="add-linha" data-act="abrirJan" data-id="f.conta" data-cat="' + cat + '">+ adicionar</button></td></tr>';
-      l.forEach(x => {
-        const at = N.ativa(D, x), gc = N.ehCartao(x) ? N.gastosCartao(Mx, x.n) : 0;
-        h += '<tr class="' + (x.pago ? 'pago' : '') + (at ? '' : ' folha') + (flashId === x.id ? ' flash' : '') + '"><td><input type="checkbox" class="ck" data-ch="pago" data-id="' + x.id + '"' + (x.pago ? ' checked' : '') + ' aria-label="' + esc(x.n) + ' paga"></td>' +
-          '<td>' + (x.pid ? '<span class="cel nome">' + esc(x.n) + '</span>' : '<input class="cel nome" data-ch="cNome" data-id="' + x.id + '" data-foco="cn' + x.id + '" value="' + esc(x.n) + '" aria-label="Descrição">') + '</td>' +
-          '<td class="r"><input class="cel dia" inputmode="numeric" data-ch="cDia" data-id="' + x.id + '" data-foco="cd' + x.id + '" value="' + (x.dia || '') + '" placeholder="–" aria-label="Dia de vencimento"></td>' +
-          '<td class="r"><input class="cel val" inputmode="decimal" data-ch="cVal" data-id="' + x.id + '" data-foco="cv' + x.id + '" value="' + N.fmtIn(x.v) + '" placeholder="0,00" aria-label="Valor">' + (gc ? '<small>+ ' + brl(gc) + ' lançados = ' + brl(x.v + gc) + '</small>' : '') + '</td>' +
-          '<td>' + (x.pid ? '<span class="tag t">' + x.pk + '/' + x.tot + '</span>' + (at ? '' : ' <span class="tag">em folha</span>') : x.rec === 0 ? '<span class="tag">só este mês</span>' : '') + '</td>' +
+      h += sec(cat, cat, sub, l.map(x => {
+        const at = N.ativa(D, x), gc = N.ehCartao(x) ? N.gastosCartao(Mx, x.n) : 0, v = N.valConta(Mx, x);
+        return '<tr class="' + (x.pago ? 'pago' : '') + (at ? '' : ' folha') + (flashId === x.id ? ' flash' : '') + '"><td class="c-ck"><input type="checkbox" class="ck" data-ch="pago" data-id="' + x.id + '"' + (x.pago ? ' checked' : '') + ' aria-label="' + esc(x.n) + ' paga"></td>' +
+          '<td>' + (x.pid ? '<span class="cel">' + esc(x.n) + '</span>' : '<input class="cel" data-ch="cNome" data-id="' + x.id + '" data-foco="cn' + x.id + '" value="' + esc(x.n) + '" aria-label="Descrição">') + '</td>' +
+          '<td><input class="cel dia" inputmode="numeric" data-ch="cDia" data-id="' + x.id + '" data-foco="cd' + x.id + '" value="' + (x.dia || '') + '" placeholder="–" aria-label="Dia de vencimento"></td>' +
+          '<td><input class="cel val" inputmode="decimal" data-ch="cVal" data-id="' + x.id + '" data-foco="cv' + x.id + '" value="' + N.fmtIn(x.v) + '" placeholder="0,00" aria-label="Valor"' + (gc ? ' title="Fatura ' + brl(x.v) + ' + ' + brl(gc) + ' lançados = ' + brl(v) + '"' : '') + '>' + (gc ? '<small>+' + brl(gc) + ' lançados</small>' : '') + '</td>' +
+          '<td class="r c-pct">' + (at ? pct(v) : '') + '</td>' +
+          '<td class="c-tipo">' + (x.pid ? '<span class="tag t">' + x.pk + '/' + x.tot + (at ? '' : ' · folha') + '</span>' : '<button class="tipo-bt" data-act="tipoConta" data-id="' + x.id + '" title="Clique para trocar">' + (x.rec === 0 ? 'só este mês' : 'todo mês') + '</button>') + '</td>' +
           '<td><button class="bt-x" data-act="delConta" data-id="' + x.id + '" title="Excluir deste mês" aria-label="Excluir ' + esc(x.n) + '">' + ico('x') + '</button></td></tr>';
-      });
+      }).join('') + '<tr class="add"><td></td><td colspan="6"><input class="cel" data-ch="addConta" data-cat="' + cat + '" data-foco="add-' + cat + '" placeholder="+ adicionar em ' + N.CAT_NOME[cat].toLowerCase() + ' (digite o nome e Enter)" aria-label="Nova conta em ' + N.CAT_NOME[cat] + '"></td></tr>');
     });
-    h += '<tr class="grupo"><td colspan="3">GUARDADO (DINHEIRO DA CASA)</td><td class="r num">' + brl(N.saldoGuardado(D, sel)) + '</td><td colspan="2" class="r"><button class="add-linha" data-act="tela" data-t="metas">histórico</button></td></tr>' +
-      '<tr><td></td><td>Guardar este mês <span class="tag t">' + (c.Gauto ? c.pct + '% da sobra' : 'valor fixo') + '</span></td><td></td><td class="r"><input class="cel val" inputmode="decimal" data-ch="gMes" data-foco="gmes" value="' + N.fmtIn(c.G) + '" placeholder="0,00" aria-label="Guardar este mês"></td><td colspan="2">' + (c.Gauto ? '' : '<button class="add-linha" data-act="gAuto" title="Voltar a calcular pelo %">usar ' + c.pct + '%</button>') + '</td></tr>' +
-      '<tr><td></td><td>Tirei do guardado (emergência)</td><td></td><td class="r num neg">' + (c.Ge ? '− ' + brl(c.Ge) : brl(0)) + '</td><td colspan="2"><button class="add-linha" data-act="abrirJan" data-id="f.gasto" data-f="emerg">+ tirar</button></td></tr>';
-    b.innerHTML = h + '</tbody></table></div><div class="kpis">' + kpi('Total das contas', c.C) + kpi('Já pagas', c.pagas) + kpi('Falta pagar', c.aPagar, c.aPagar ? 'warn' : '') + '</div><p class="dica">Marque “Paga” quando pagar. Compras lançadas no cartão somam na fatura do cartão deste mês.</p>';
-  };
-  R.rendas = (b, w) => {
-    tit(w, 'Rendas de ' + N.nomeCurto(sel));
-    const c = N.calc(D, sel); if (!c) return semMes(b);
-    b.innerHTML = '<div class="tab-wrap"><table><thead><tr><th>Fonte</th><th class="r">Dia</th><th class="r">Valor</th><th>VA</th><th></th></tr></thead><tbody>' + c.M.rendas.map(r =>
-      '<tr><td><input class="cel nome" data-ch="rNome" data-id="' + r.id + '" data-foco="rn' + r.id + '" value="' + esc(r.n) + '" aria-label="Nome"></td><td class="r"><input class="cel dia" inputmode="numeric" data-ch="rDia" data-id="' + r.id + '" data-foco="rd' + r.id + '" value="' + (r.dia || '') + '" placeholder="–" aria-label="Dia que cai"></td>' +
-      '<td class="r"><input class="cel val" inputmode="decimal" data-ch="rVal" data-id="' + r.id + '" data-foco="rv' + r.id + '" value="' + N.fmtIn(r.v) + '" placeholder="0,00" aria-label="Valor"></td><td><input type="checkbox" class="ck" data-ch="rVa" data-id="' + r.id + '"' + (r.va ? ' checked' : '') + ' title="É vale-alimentação (não entra no dinheiro livre)" aria-label="É VA"></td>' +
-      '<td><button class="bt-x" data-act="delRenda" data-id="' + r.id + '" aria-label="Excluir ' + esc(r.n) + '">' + ico('x') + '</button></td></tr>').join('') +
-      '<tr class="total"><td colspan="2">Renda (sem VA)</td><td class="r num">' + brl(c.R) + '</td><td colspan="2"></td></tr>' + (c.VA ? '<tr><td colspan="2" class="dica">VA</td><td class="r num">' + brl(c.VA) + '</td><td colspan="2"></td></tr>' : '') + '</tbody></table></div>' +
-      '<button class="btn mini" data-act="abrirJan" data-id="f.renda">' + ico('mais') + ' Nova renda</button><p class="dica">Dia 1 cai o pagamento, dia 30 cai o VA. O VA tem saldo próprio e não entra no dinheiro livre.</p>';
+    const ng = Mx.gastos.filter(g => g.f === 'pix' || g.f === 'din').length;
+    h += sec('DIA A DIA', 'DIA A DIA', c.Gv, '<tr class="info"><td></td><td>Pix, débito e dinheiro (' + ng + ') <button class="link" data-act="jan" data-id="gastos">ver / lançar</button></td><td></td><td class="r num">' + brl(c.Gv) + '</td><td class="r c-pct">' + pct(c.Gv) + '</td><td class="c-tipo"></td><td></td></tr>' +
+      (c.VA || c.Gva ? '<tr class="info"><td></td><td>No VA (saldo ' + brl(c.vaSaldo) + ', fica à parte)</td><td></td><td class="r num">' + brl(c.Gva) + '</td><td class="c-pct"></td><td class="c-tipo"></td><td></td></tr>' : ''));
+    h += sec('GUARDADO', 'GUARDADO', c.G, '<tr><td></td><td>Guardar este mês <span class="tag t">' + (c.Gauto ? c.pct + '% da sobra' : 'valor fixo') + '</span>' + (c.Gauto ? '' : ' <button class="link" data-act="gAuto">usar ' + c.pct + '%</button>') + '</td><td></td><td><input class="cel val" inputmode="decimal" data-ch="gMes" data-foco="gmes" value="' + N.fmtIn(c.G) + '" placeholder="0,00" aria-label="Guardar este mês"></td><td class="r c-pct">' + pct(c.G) + '</td><td class="c-tipo"></td><td></td></tr>' +
+      '<tr class="info"><td></td><td>Tirei do guardado <button class="link" data-act="abrirJan" data-id="f.gasto" data-f="emerg">+ tirar</button></td><td></td><td class="r num neg">' + (c.Ge ? '− ' + brl(c.Ge) : '–') + '</td><td class="c-pct"></td><td class="c-tipo"></td><td></td></tr>' +
+      '<tr class="info"><td></td><td><b>Saldo guardado</b> <button class="link" data-act="jan" data-id="guardado">histórico</button></td><td></td><td class="r num"><b>' + brl(N.saldoGuardado(D, sel)) + '</b></td><td class="c-pct"></td><td class="c-tipo"></td><td></td></tr>');
+    const lv = nivel(c);
+    const pe = '<td class="c-pct"></td><td class="c-tipo"></td><td></td>', fl = (rot, v, cls) => '<tr><td></td><td colspan="2">' + rot + '</td><td class="r num ' + (cls || '') + '">' + v + '</td>' + pe + '</tr>';
+    h += '<tfoot>' + fl('Entradas', brl(c.R), 'pos') + fl('Saídas (contas + dia a dia)', '− ' + brl(c.gastoTotal)) + fl('Sobra', brl(c.sobra), c.sobra < 0 ? 'neg' : '') + fl('Guardado + metas do mês', '− ' + brl(c.G + c.res)) +
+      '<tr class="livre ' + lv + '"><td></td><td colspan="2">LIVRE' + (sel === N.hojeK() && c.livre > 0 ? ' <small class="dica">≈ ' + brl(Math.floor(c.livre / N.diasRestantes(sel))) + '/dia</small>' : '') + '</td><td class="r">' + brl(c.livre) + '</td>' + pe + '</tr></tfoot>';
+    b.innerHTML = h + '</table></div>';
   };
   function formGasto(nome, Mx, f) {
     return '<form class="secao" data-form="' + nome + '"><label class="rot">O que foi?<input class="campo" name="n" required placeholder="Ex.: Mercado, Uber, farmácia" autocomplete="off"></label>' +
@@ -250,14 +230,6 @@
     const l = [...c.M.gastos].sort((a, b2) => b2.d - a.d);
     b.innerHTML = formGasto('gasto', c.M) + '<div class="kpis">' + kpi('Pix / dinheiro', c.Gv) + kpi('Nos cartões', c.Gc) + kpi('No VA', c.Gva) + kpi('Emergência (do guardado)', c.Ge, c.Ge ? 'warn' : '') + '</div>' +
       (l.length ? '<div class="tab-wrap"><table><tbody>' + l.map(g => '<tr' + (flashId === g.id ? ' class="flash"' : '') + '><td class="num">' + String(g.d).padStart(2, '0') + '</td><td>' + esc(g.n) + ' <span class="tag">' + esc(formaNome(g.f)) + '</span></td><td class="r num">' + brl(g.v) + '</td><td><button class="bt-x" data-act="delGasto" data-id="' + g.id + '" aria-label="Excluir ' + esc(g.n) + '">' + ico('x') + '</button></td></tr>').join('') + '</tbody></table></div>' : '<p class="dica">Nenhum gasto lançado ainda. Cada gasto que você lança aqui o assistente já desconta do que está livre.</p>');
-  };
-  R.livre = b => {
-    const c = N.calc(D, sel); if (!c) return semMes(b);
-    const restam = N.diasRestantes(sel), lv = nivel(c), m = N.analisar(D, sel).find(x => x.id === 'livre');
-    b.innerHTML = '<div class="resultado"><span class="dica">Livre para gastar em ' + esc(N.nomeCurto(sel)) + '</span><span class="grande ' + (lv === 'bad' ? 'neg' : '') + '">' + brl(c.livre) + '</span>' +
-      (restam && c.livre > 0 && sel === N.hojeK() ? '<p>≈ <b>' + brl(Math.floor(c.livre / restam)) + ' por dia</b> nos ' + restam + ' dias que faltam.</p>' : '') + '</div>' + usoBar(c) +
-      (m ? msgHTML(m) : '') +
-      '<label class="rot">E se eu gastar…<input class="campo" data-in="simGasto" inputmode="decimal" placeholder="Ex.: 150,00" autocomplete="off"></label><div class="dica" id="sim-res"></div>';
   };
   R.guardado = b => {
     const c = N.calc(D, sel), h = N.historicoGuardado(D), saldo = N.saldoGuardado(D, sel), gu = D.cfg.guardar;
@@ -276,15 +248,24 @@
   };
   R.metas = b => {
     const ms = D.cfg.metas || [];
-    b.innerHTML = '<div class="linha"><button class="btn mini pri" data-act="abrirJan" data-id="f.meta">' + ico('mais') + ' Nova meta</button></div>' + (ms.length ? '<div class="metas-lista">' + ms.map(m => {
+    let h = '<div class="linha"><button class="btn mini pri" data-act="abrirJan" data-id="f.meta">' + ico('mais') + ' Nova meta</button><button class="btn mini" data-act="jan" data-id="calc">' + ico('calc') + ' Simulador</button><button class="btn mini" data-act="jan" data-id="guardado">' + ico('disco') + ' Dinheiro guardado</button></div>';
+    if (!ms.length) { b.innerHTML = h + '<p class="vazio">Nenhuma meta ainda. Ex.: “chegar em dezembro com R$ 5.000” ou “juntar R$ 100 mil guardando R$ 800 por mês”.</p>'; return; }
+    h += '<div class="tab-wrap"><table class="metas-tab"><thead><tr><th>Meta</th><th>Progresso</th><th class="r">Guardado</th><th>Guardar / retirar</th><th></th></tr></thead><tbody>' + ms.map(m => {
       const g = N.guardado(m), p = Math.min(100, N.pct(g, m.alvo)), pl = N.planoMeta(m, sel), dep = N.guardadoNoMes(m, sel);
-      return '<div class="meta' + (pl.feito ? ' feita' : '') + '" id="meta-' + m.id + '"><div class="meta-top"><h3>' + esc(m.n) + '</h3><div><button class="bt-x" data-act="editMeta" data-id="' + m.id + '" title="Editar" aria-label="Editar ' + esc(m.n) + '">' + ico('editar') + '</button><button class="bt-x" data-act="delMeta" data-id="' + m.id + '" title="Excluir" aria-label="Excluir ' + esc(m.n) + '">' + ico('lixo') + '</button></div></div>' +
-        '<div class="bar"><i class="' + (pl.feito ? 'ok' : '') + '" style="width:' + p + '%"></i></div>' +
-        '<div class="valores"><b>' + brl(g) + '</b> de ' + brl(m.alvo) + ' · <b>' + p + '%</b>' + (pl.feito ? '' : ' · faltam ' + brl(m.alvo - g)) + '</div>' +
-        '<div class="plano">' + esc(pl.txt) + (m.orc && !pl.feito ? ' <span class="tag t">reservado no mês</span>' : '') + (pl.mensal && !pl.feito ? '<br>Este mês: ' + brl(dep) + ' de ' + brl(pl.mensal) + (dep >= pl.mensal ? ' ✓' : '') : '') + '</div>' +
-        '<form class="linha" data-form="guardar" data-id="' + m.id + '"><input class="campo" name="v" inputmode="decimal" placeholder="Valor" aria-label="Valor" autocomplete="off"><button class="btn mini pri" name="op" value="+">Guardar</button><button class="btn mini" name="op" value="-">Retirar</button></form>' +
-        ((m.h || []).length ? '<ul class="hist">' + m.h.slice(-3).reverse().map(h => '<li><span>' + esc(h.d) + (h.n ? ' · ' + esc(h.n) : '') + '</span><span class="' + (h.v < 0 ? 'neg' : 'pos') + '">' + (h.v < 0 ? '' : '+') + brl(h.v) + '</span></li>').join('') + '</ul>' : '') + '</div>';
-    }).join('') + '</div>' : '<p class="vazio">Nenhuma meta ainda. Crie uma: “chegar em dezembro com R$ 5.000” ou “juntar R$ 100 mil guardando R$ 800 por mês”.</p>');
+      return '<tr id="meta-' + m.id + '"><td class="m-nome"><b>' + esc(m.n) + '</b><small>' + esc(pl.txt) + (pl.mensal && !pl.feito ? ' Este mês: ' + brl(dep) + ' de ' + brl(pl.mensal) + (dep >= pl.mensal ? ' ✓' : '') : '') + '</small></td>' +
+        '<td class="m-prog"><div class="bar"><i class="' + (pl.feito ? 'ok' : '') + '" style="width:' + p + '%"></i></div><span>' + p + '% · faltam ' + brl(Math.max(0, m.alvo - g)) + '</span></td>' +
+        '<td class="r num"><b>' + brl(g) + '</b><small>de ' + brl(m.alvo) + '</small></td>' +
+        '<td><form data-form="guardar" data-id="' + m.id + '"><input class="campo" name="v" inputmode="decimal" placeholder="Valor" aria-label="Valor" autocomplete="off"><button class="btn mini pri" name="op" value="+" title="Guardar">+</button><button class="btn mini" name="op" value="-" title="Retirar">−</button></form></td>' +
+        '<td style="white-space:nowrap"><button class="bt-x" data-act="editMeta" data-id="' + m.id + '" title="Editar" aria-label="Editar ' + esc(m.n) + '">' + ico('editar') + '</button><button class="bt-x" data-act="delMeta" data-id="' + m.id + '" title="Excluir" aria-label="Excluir ' + esc(m.n) + '">' + ico('lixo') + '</button></td></tr>';
+    }).join('') + '</tbody></table></div>';
+    const comH = ms.filter(m => (m.h || []).length);
+    if (comH.length) h += '<div class="secao"><h4>Evolução</h4><div class="graf fixo" id="g-evol"></div></div>';
+    b.innerHTML = h;
+    if (comH.length) {
+      let ini = comH.flatMap(m => m.h.map(x => x.k)).sort()[0]; const fim = sel > ini ? sel : ini; if (N.diffM(ini, fim) < 5) ini = N.addM(fim, -5);
+      const ks = []; for (let k = ini; k <= fim; k = N.addM(k, 1)) ks.push(k);
+      G.linhas($('#g-evol', b), { titulo: 'Evolução das metas', area: true, rotulos: ks.map(N.curto), series: comH.map((m, i) => ({ n: m.n, cor: G.CORES[i % G.CORES.length], v: ks.map(k => N.soma(m.h.filter(x => x.k <= k))) })) });
+    }
   };
   function calcTexto() {
     const s = calcS, c = N.calc(D, sel), sobra = c ? Math.max(0, c.sobra) : 0;
@@ -309,15 +290,6 @@
       '<label class="rot">Rendimento ao ano (%)<input class="campo" name="taxa" inputmode="decimal" data-in="calc" value="' + String(s.taxa).replace('.', ',') + '"></label></div>' +
       '<p class="dica">0% = dinheiro parado. CDB 100% do CDI / Tesouro Selic rendem perto de 10% ao ano (antes do imposto).</p>' +
       '<div class="resultado" id="calc-res">' + calcTexto() + '</div><button class="btn pri">' + ico('alvo') + ' Transformar em meta</button></form>';
-  };
-  R.evol = b => {
-    const ms = (D.cfg.metas || []).filter(m => (m.h || []).length);
-    if (!ms.length) { b.innerHTML = '<p class="vazio">Quando você guardar dinheiro nas metas, a evolução aparece aqui.</p>'; return; }
-    let ini = ms.flatMap(m => m.h.map(h => h.k)).sort()[0]; const fim = sel > ini ? sel : ini;
-    if (N.diffM(ini, fim) < 5) ini = N.addM(fim, -5);
-    const ks = []; for (let k = ini; k <= fim; k = N.addM(k, 1)) ks.push(k);
-    b.innerHTML = '<div class="graf"></div>';
-    G.linhas($('.graf', b), { titulo: 'Evolução das metas', area: true, rotulos: ks.map(N.curto), series: ms.map((m, i) => ({ n: m.n, cor: G.CORES[i % G.CORES.length], v: ks.map(k => N.soma(m.h.filter(h => h.k <= k))) })) });
   };
   R.chat = (b, w) => {
     const ms = N.analisar(D, sel), nome = D.cfg.nome || '';
@@ -354,10 +326,24 @@
       ['Nunca o mínimo do cartão', 'O rotativo passa de 400% ao ano. Se apertar, renegocie ou parcele a fatura.']];
     b.innerHTML = '<div class="msgs">' + dicas.map(d => '<div class="msg">' + ico('folha') + '<div><b>' + esc(d[0]) + '</b><p>' + esc(d[1]) + '</p></div></div>').join('') + '</div>';
   };
+  R.relat = b => {
+    const c = N.calc(D, sel); if (!c) return semMes(b);
+    b.innerHTML = '<div class="secao"><h4>Visão do ano</h4><div class="graf fixo" id="r-ano"></div></div><div class="secao"><h4>Para onde vai o dinheiro</h4><div class="graf fixo" id="r-cats" style="height:200px"></div></div><div class="secao"><h4>Tendência dos gastos</h4><div id="r-tend"></div></div><div class="secao"><h4>Onde economizar</h4><div id="r-eco"></div></div>';
+    const y = +sel.slice(0, 4), cs = N.MES.map((_, i) => N.calc(D, N.mk(y, i + 1)));
+    G.barras($('#r-ano', b), { titulo: 'Visão do ano', rotulos: N.MES, destaque: +sel.slice(5) - 1, series: [{ n: 'Entradas', cor: 'var(--aqua2)', v: cs.map(x => x ? x.R : null) }, { n: 'Saídas', cor: 'var(--ag)', v: cs.map(x => x ? x.gastoTotal : null) }], linha: { n: 'Sobra', cor: 'var(--tinta2)', v: cs.map(x => x ? x.sobra : null) } });
+    G.rosca($('#r-cats', b), Object.entries(c.porCat).sort((a, b2) => b2[1] - a[1]).map(([k, v], i) => ({ n: N.CAT_NOME[k] || k, v, cor: G.CORES[i % G.CORES.length] })));
+    const rt = $('#r-tend', b); R.tend(rt); const gt = $('.graf', rt); if (gt) gt.classList.add('fixo');
+    R.eco($('#r-eco', b));
+  };
+  R.ajustes = b => {
+    const t0 = document.createElement('div'), t1 = document.createElement('div');
+    R.geral(t0); R.dados(t1);
+    b.innerHTML = t0.innerHTML + '<div class="secao"><h4>Contas padrão e parcelas</h4><div class="linha"><button class="btn mini" data-act="jan" data-id="modelo">' + ico('lista') + ' Modelo do mês</button><button class="btn mini" data-act="jan" data-id="parc">' + ico('cartao') + ' Parcelas e empréstimos</button></div></div><div class="secao"><h4>Dados e cópias</h4>' + t1.innerHTML + '</div>';
+  };
   R.geral = b => {
     b.innerHTML = '<div class="secao"><h4>Você</h4><label class="rot">Seu nome (o assistente chama você assim)<input class="campo" data-ch="nome" value="' + esc(D.cfg.nome) + '" data-foco="nome"></label></div>' +
-      '<div class="secao"><h4>Aparência</h4>' + chave('tema', 'Modo noturno', pref.tema === 'escuro', 'data-ch="temaChave"') + chave('rail', 'Mostrar o menu lateral', pref.rail, 'data-ch="railChave"') + '</div>' +
-      '<div class="secao"><h4>Janelas flutuantes</h4><p class="dica">Arraste pelo título, redimensione pelo canto. O alfinete trava a janela no lugar (redimensionar continua). Tudo fica guardado neste aparelho.</p><div class="linha"><button class="btn mini" data-act="resetJan" data-t="' + pref.tela + '">' + ico('reset') + ' Reorganizar esta tela</button><button class="btn mini perigo" data-act="resetJan">' + ico('reset') + ' Resetar todas</button></div></div>' +
+      '<div class="secao"><h4>Aparência</h4>' + chave('tema', 'Modo noturno', pref.tema === 'escuro', 'data-ch="temaChave"') + '</div>' +
+      '<div class="secao"><h4>Janelas flutuantes</h4><p class="dica">Os botões do menu abrem e fecham as janelas. Arraste pelo título, redimensione pelo canto. O alfinete trava a janela no lugar (redimensionar continua). Tudo fica guardado neste aparelho.</p><div class="linha"><button class="btn mini perigo" data-act="resetJan">' + ico('reset') + ' Voltar as janelas ao padrão</button></div></div>' +
       '<div class="secao"><h4>Senha ao abrir</h4>' + (pref.senha ? '<p class="dica">Ligada neste aparelho.</p><button class="btn mini perigo" data-act="tirarSenha">' + ico('cadeado') + ' Tirar a senha</button>' :
         '<form class="linha" data-form="senha"><input class="campo" type="password" name="s1" placeholder="Nova senha" autocomplete="new-password" aria-label="Nova senha"><input class="campo" type="password" name="s2" placeholder="Repita" autocomplete="new-password" aria-label="Repita a senha"><button class="btn mini pri">' + ico('cadeado') + ' Ligar</button></form>') + '</div>' +
       '<div class="secao"><h4>Usar no iPhone</h4><p class="dica">Abra o endereço do app no <b>Safari</b> → botão <b>Compartilhar</b> → <b>Adicionar à Tela de Início</b>. Ele abre como aplicativo, em tela cheia. No PC (Chrome/Edge): ícone de instalar na barra de endereço.</p></div>' +
@@ -379,7 +365,8 @@
   };
   R.parcAdm = b => {
     const ps = D.cfg.parcelas || [];
-    b.innerHTML = '<p class="dica">Parcelas entram sozinhas em cada mês criado, com o número certo (3/15, 4/15…). “Em folha” = já descontado do salário: aparece, mas não soma nas contas.</p>' +
+    const resumoP = document.createElement('div'); R.parc(resumoP);
+    b.innerHTML = resumoP.innerHTML + '<p class="dica">Parcelas entram sozinhas em cada mês criado, com o número certo (3/15, 4/15…). “Em folha” = já descontado do salário: aparece, mas não soma nas contas.</p>' +
       ps.map(p => { const n = N.numParcela(p, sel); return '<div class="secao"><div class="linha"><label class="rot">Nome<input class="campo" data-ch="pNome" data-id="' + p.id + '" data-foco="pn' + p.id + '" value="' + esc(p.n) + '"></label><label class="rot" style="flex:0 0 110px">Parcela (R$)<input class="campo" inputmode="decimal" data-ch="pVal" data-id="' + p.id + '" data-foco="pv' + p.id + '" value="' + N.fmtIn(p.v) + '"></label></div>' +
         '<div class="linha" style="align-items:center"><span class="dica" style="flex:1 1 160px">' + (n >= p.p0 && n <= p.tot ? 'Em ' + N.curto(sel) + ': parcela ' + n + ' de ' + p.tot : n > p.tot ? 'Quitado' : 'Ainda não começou') + ' · última em ' + N.curto(N.fimParcela(p)) + '</span>' + chave('folha', 'Em folha', p.folha, 'data-ch="pFolha" data-id="' + p.id + '"') + '<button class="bt-x" data-act="delParc" data-id="' + p.id + '" title="Excluir parcelamento" aria-label="Excluir ' + esc(p.n) + '">' + ico('lixo') + '</button></div></div>'; }).join('') +
       '<form class="secao" data-form="parc"><h4>Novo parcelamento ou empréstimo</h4><label class="rot">Nome<input class="campo" name="n" required placeholder="Ex.: Empréstimo CLT IV, celular"></label><div class="linha"><label class="rot">Valor da parcela<input class="campo" name="v" inputmode="decimal" required placeholder="0,00"></label><label class="rot">Categoria<select class="campo" name="c">' + catOpts('EMPRÉSTIMOS') + '</select></label></div>' +
@@ -462,34 +449,28 @@
 
   /* ================= barra superior e trilho ================= */
   function topo() {
-    const Mx = M(), c0 = N.calc(D, sel);
+    const Mx = M(), c = N.calc(D, sel);
     $('#mes-lbl').innerHTML = '<span>' + esc(N.nomeCurto(sel)) + (Mx && Mx.nome ? '<small>' + esc(Mx.nome) + '</small>' : !Mx ? '<small>não criado</small>' : '') + '</span>' + ico('baixo');
-    $('#metas-topo').innerHTML = '<button class="meta-chip guard" data-act="verGuardado" title="Dinheiro guardado (acumulado)"><div class="l1"><span>Guardado</span><b>' + brl(N.saldoGuardado(D, sel), true) + '</b></div><div class="dica" style="font-size:.7rem;line-height:1.2">' + (c0 ? '+' + brl(c0.G, true) + (c0.Ge ? ' · −' + brl(c0.Ge, true) : '') + ' este mês' : '') + '</div></button>' + (D.cfg.metas || []).map(m => { const p = Math.min(100, N.pct(N.guardado(m), m.alvo)); return '<button class="meta-chip" data-act="verMeta" data-id="' + m.id + '" title="' + esc(m.n + ': ' + brl(N.guardado(m)) + ' de ' + brl(m.alvo)) + '"><div class="l1"><span>' + esc(m.n) + '</span><b>' + p + '%</b></div><div class="bar"><i class="' + (p >= 100 ? 'ok' : '') + '" style="width:' + p + '%"></i></div></button>'; }).join('') +
-      '<button class="meta-chip add" data-act="abrirJan" data-id="f.meta">' + ico('mais') + ' Meta</button>';
-    const c = N.calc(D, sel), cl = $('#chip-livre');
+    const cl = $('#chip-livre');
     if (c) { cl.hidden = false; cl.className = 'chip-livre ' + nivel(c); cl.innerHTML = '<span class="rot-l">Livre </span><b>' + brl(c.livre) + '</b>'; } else cl.hidden = true;
     $('#bt-tema').innerHTML = ico(pref.tema === 'escuro' ? 'sol' : 'lua');
     $('#bt-tema').title = pref.tema === 'escuro' ? 'Modo dia' : 'Modo noturno';
+    menu();
   }
-  function railResumo() {
-    const c = N.calc(D, sel), dd = (t, v, cls) => '<dt>' + t + '</dt><dd class="' + (cls || '') + '">' + v + '</dd>';
-    $('#resumo').innerHTML = c ? dd('Mês', esc(N.curto(sel))) + dd('Renda', brl(c.R, true)) + dd('Contas', brl(c.gastoTotal, true)) + dd('Guardar/mês', brl(c.G, true)) + dd('Guardado', brl(N.saldoGuardado(D, sel), true)) + dd('Metas/mês', brl(c.res, true)) + dd('Livre', brl(c.livre, true), c.livre < 0 ? 'neg' : 'pos') : dd('Mês', esc(N.curto(sel)) + ' (não criado)');
+  function menu() {
+    if (!iniciado) return;
+    const ms = D.cfg.metas || [], alvo = N.soma(ms, m => m.alvo), g = N.soma(ms, m => Math.min(m.alvo, N.guardado(m))), pm = alvo ? Math.round(g / alvo * 100) : 0;
+    const av = N.analisar(D, sel), nb = av.filter(m => m.lvl === 'bad').length, nw = av.filter(m => m.lvl === 'warn').length;
+    const extra = { metas: ms.length ? '<span class="qt">' + pm + '%</span><span class="mini-bar"><i style="width:' + pm + '%"></i></span>' : '', guardado: '<span class="qt">' + brl(N.saldoGuardado(D, sel), true) + '</span>', assist: nb + nw ? '<span class="qt ' + (nb ? 'bad' : 'warn') + '">' + (nb + nw) + '</span>' : '' };
+    const tj = J.topo();
+    $('#menu').innerHTML = MENU.map(([id, n, i], k) => (k === 3 || k === 6 ? '<span class="sep"></span>' : '') + '<button type="button" data-act="jan" data-id="' + id + '" class="' + (J.aberta(id) ? 'on' : '') + '" aria-pressed="' + J.aberta(id) + '" title="' + (J.aberta(id) ? (tj && tj.dataset.id === id ? 'Fechar ' : 'Trazer para a frente: ') : 'Abrir ') + n + '">' + ico(i) + n + (extra[id] || '') + '</button>').join('');
   }
   function montarNav() {
-    const bt = ([t, n, i]) => '<button data-act="tela" data-t="' + t + '">' + ico(i) + '<span>' + n + '</span></button>';
-    const tl = Object.fromEntries(TELAS.map(x => [x[0], x]));
-    $('#nav').innerHTML = '<div class="nav-grupo">Visão</div>' + bt(tl.painel) + bt(tl.mes) + '<div class="nav-grupo">Planejar</div>' + bt(tl.metas) + bt(tl.assist) +
-      '<div class="nav-grupo">Criar</div>' + CRIAR.map(([id, n, i]) => '<button class="criar" data-act="abrirJan" data-id="' + id + '">' + ico(i) + '<span>' + n + '</span></button>').join('') +
-      '<div class="nav-grupo">Ajustes</div>' + bt(tl.ajustes) + '<button data-act="buscar">' + ico('busca') + '<span>Buscar</span><kbd>Ctrl L</kbd></button>';
-    $('#abas-cel').innerHTML = bt(tl.painel) + bt(tl.mes) + '<button class="mais" data-act="menuCriar" aria-label="Criar">' + ico('mais') + '</button>' + bt(tl.metas) + bt(tl.assist) + bt(tl.ajustes).replace('Ajustes', 'Ajustes');
-    $('#abas-cel').querySelectorAll('span').forEach(s => { if (s.textContent === 'Contas do mês') s.textContent = 'Mês'; });
     $$('.mes-nav .btn-ico')[0].innerHTML = ico('esq'); $$('.mes-nav .btn-ico')[1].innerHTML = ico('dir');
-    $('#bt-buscar').innerHTML = ico('busca') + '<span class="txt">Buscar</span><kbd>Ctrl L</kbd>';
-    $('#bt-janelas').innerHTML = ico('janelas'); $('#busca-ico').innerHTML = ico('busca');
-    $('#versao').textContent = 'versão ' + VERSAO;
+    $('#bt-buscar').innerHTML = ico('busca'); $('#bt-novo').innerHTML = ico('mais') + ' Novo'; $('#fab').innerHTML = ico('mais');
+    $('#busca-ico').innerHTML = ico('busca');
   }
   function aplicarTema() { document.documentElement.setAttribute('data-tema', pref.tema === 'claro' ? 'claro' : 'escuro'); const m = $('meta[name=theme-color]'); if (m) m.content = pref.tema === 'claro' ? '#0F4B55' : '#051619'; }
-  function aplicarRail() { $('#app').classList.toggle('sem-rail', !pref.rail); $('#bt-rail').textContent = pref.rail ? '‹' : '›'; $('#bt-rail').style.left = pref.rail ? '' : '0px'; setTimeout(() => J.todas().forEach(w => { if (!w.hidden) w.style.left = w.style.left; }), 0); }
 
   /* ================= menus (mês, janelas, criar) ================= */
   function abrirPop(html, ancora) {
@@ -505,11 +486,6 @@
     abrirPop(anos.map(y => '<h5>' + y + '</h5><div class="anos-grade">' + N.MES.map((m, i) => { const k = N.mk(y, i + 1); return '<button class="' + (k === sel ? 'on' : '') + (D.meses[k] ? '' : ' vazio') + '" data-act="irMes" data-k="' + k + '" title="' + (D.meses[k] ? N.nomeCurto(k) : N.nomeCurto(k) + ' (não criado)') + '">' + m + '</button>'; }).join('') + '</div>').join('') +
       '<hr><button data-act="irMes" data-k="' + N.hojeK() + '">' + ico('cal') + ' Mês atual</button><button data-act="abrirJan" data-id="f.mes">' + ico('mais') + ' Criar mês…</button>', a);
   }
-  function menuJanelas(a) {
-    const ids = J.porTela(pref.tela);
-    abrirPop('<h5>Janelas desta tela</h5>' + ids.map(id => '<button data-act="alternarJan" data-id="' + id + '">' + ico(J.def(id).i) + ' ' + esc(J.def(id).t) + (J.aberta(id) ? '<span class="marca-ok">' + ico('ok') + '</span>' : '') + '</button>').join('') +
-      '<hr><button data-act="resetJan" data-t="' + pref.tela + '">' + ico('reset') + ' Reorganizar esta tela</button><button data-act="destravarTodas">' + ico('pin') + ' Destravar todas</button>', a);
-  }
   function menuCriar(a) { abrirPop('<h5>Criar</h5>' + CRIAR.map(([id, n, i]) => '<button data-act="abrirJan" data-id="' + id + '">' + ico(i) + ' ' + n + '</button>').join('') + '<hr><button data-act="buscar">' + ico('busca') + ' Buscar</button>', a); }
 
   /* ================= busca (Ctrl+L) ================= */
@@ -518,20 +494,19 @@
     const it = [], add = (g, i, t, s, fn) => it.push({ g, i, t, s: s || '', fn, q: N.norm(t + ' ' + (s || '')) });
     CRIAR.forEach(([id, n, i]) => add('Ações', i, n, '', () => abrirJan(id)));
     add('Ações', pref.tema === 'escuro' ? 'sol' : 'lua', pref.tema === 'escuro' ? 'Modo dia' : 'Modo noturno', 'tema', () => ACT.tema());
-    add('Ações', 'reset', 'Reorganizar janelas desta tela', '', () => J.resetar(pref.tela));
+    add('Ações', 'reset', 'Voltar as janelas ao padrão', '', () => J.resetar());
     add('Ações', 'disco', 'Baixar cópia dos dados', 'backup', () => ACT.baixar());
     add('Ações', 'disco', 'Dinheiro guardado', brl(N.saldoGuardado(D, sel)) + ' · histórico', () => ACT.verGuardado());
     add('Ações', 'menos', 'Tirar do guardado (emergência)', '', () => abrirJan('f.gasto', { f: 'emerg' }));
-    TELAS.forEach(([t, n, i]) => add('Telas', i, n, 'tela', () => irTela(t)));
-    JANS.filter(d => d.tela).forEach(d => add('Janelas', d.i, d.t, TELAS.find(x => x[0] === d.tela)[1], () => { irTela(d.tela); J.abrir(d.id); }));
+    JANS.filter(d => !d.form).forEach(d => add('Janelas', d.i, d.t, 'abrir', () => abrirJan(d.id)));
     Object.keys(D.meses).sort().reverse().forEach(k => add('Meses', 'cal', N.nomeCurto(k), D.meses[k].nome, () => irMes(k)));
     (D.cfg.metas || []).forEach(m => add('Metas', 'alvo', m.n, brl(N.guardado(m)) + ' de ' + brl(m.alvo), () => verMeta(m.id)));
-    (D.cfg.parcelas || []).forEach(p => add('Parcelamentos', 'cartao', p.n, brl(p.v) + ' · até ' + N.curto(N.fimParcela(p)), () => { irTela('ajustes'); J.abrir('ajustes.parc'); }));
+    (D.cfg.parcelas || []).forEach(p => add('Parcelamentos', 'cartao', p.n, brl(p.v) + ' · até ' + N.curto(N.fimParcela(p)), () => abrirJan('parc')));
     Object.keys(D.meses).sort().reverse().forEach(k => {
       const Mx = D.meses[k];
-      Mx.contas.forEach(c => add('Contas', 'lista', c.n, N.curto(k) + ' · ' + brl(N.valConta(Mx, c)) + (c.pago ? ' · paga' : ''), () => { irMes(k); irTela('mes'); flash(c.id); }));
-      Mx.gastos.forEach(g => add('Gastos', 'carteira', g.n, String(g.d).padStart(2, '0') + '/' + N.curto(k) + ' · ' + brl(g.v), () => { irMes(k); irTela('mes'); J.abrir('mes.gastos'); flash(g.id); }));
-      Mx.rendas.forEach(r => add('Rendas', 'moeda', r.n, N.curto(k) + ' · ' + brl(r.v), () => { irMes(k); irTela('mes'); J.abrir('mes.rendas'); }));
+      Mx.contas.forEach(c => add('Contas', 'lista', c.n, N.curto(k) + ' · ' + brl(N.valConta(Mx, c)) + (c.pago ? ' · paga' : ''), () => { irMes(k); abrirJan('contas'); flash(c.id); }));
+      Mx.gastos.forEach(g => add('Gastos', 'carteira', g.n, String(g.d).padStart(2, '0') + '/' + N.curto(k) + ' · ' + brl(g.v), () => { irMes(k); abrirJan('gastos'); flash(g.id); }));
+      Mx.rendas.forEach(r => add('Rendas', 'moeda', r.n, N.curto(k) + ' · ' + brl(r.v), () => { irMes(k); abrirJan('contas'); }));
     });
     return it;
   }
@@ -540,7 +515,7 @@
   function fecharBusca() { $('#busca').hidden = true; }
   function filtrar() {
     const q = N.norm($('#busca-q').value).trim(), ps = q.split(/\s+/).filter(Boolean);
-    bRes = (ps.length ? IDX.filter(x => ps.every(p => x.q.includes(p))) : IDX.filter(x => x.g === 'Ações' || x.g === 'Telas' || (x.g === 'Meses'))).slice(0, 60);
+    bRes = (ps.length ? IDX.filter(x => ps.every(p => x.q.includes(p))) : IDX.filter(x => x.g === 'Ações' || x.g === 'Janelas' || x.g === 'Meses')).slice(0, 60);
     bSel = 0; let g = '';
     $('#busca-res').innerHTML = bRes.length ? bRes.map((x, i) => (x.g !== g ? '<li class="grp">' + (g = x.g) + '</li>' : '') + '<li class="it' + (i === bSel ? ' sel' : '') + '" data-i="' + i + '" role="option">' + ico(x.i) + '<span>' + esc(x.t) + '</span><small>' + esc(x.s) + '</small></li>').join('') : '<li class="grp">Nada encontrado</li>';
   }
@@ -564,27 +539,26 @@
   }
 
   /* ================= ações ================= */
-  function abrirJan(id, ctx) { fecharPop(); const d = J.def(id); if (d.tela && d.tela !== pref.tela) irTela(d.tela); J.abrir(id, ctx); }
+  function abrirJan(id, ctx) { fecharPop(); if (!J.def(id)) return; J.abrir(id, ctx); }
   function irMes(k) { sel = k; calDia = null; fecharPop(); desenharTudo(); }
-  function verMeta(id) { irTela('metas'); J.abrir('metas.lista'); setTimeout(() => { const e = document.getElementById('meta-' + id); if (e) { e.scrollIntoView({ block: 'center', behavior: 'smooth' }); e.style.outline = '2px solid var(--teal)'; setTimeout(() => { e.style.outline = ''; }, 1600); } }, 50); }
+  function verMeta(id) { abrirJan('metas'); setTimeout(() => { const e = document.getElementById('meta-' + id); if (e) { e.scrollIntoView({ block: 'center', behavior: 'smooth' }); e.style.outline = '2px solid var(--teal)'; setTimeout(() => { e.style.outline = ''; }, 1600); } }, 50); }
   const ACT = {
     tela: b => irTela(b.dataset.t),
+    jan: b => { fecharPop(); J.alternar(b.dataset.id); },
+    rVaTroca: b => { const r = achar(M().rendas, b.dataset.id); r.va = r.va ? 0 : 1; mudou({ ping: true }); },
+    tipoConta: b => { const x = achar(M().contas, b.dataset.id); x.rec = x.rec === 0 ? 1 : 0; mudou(); },
     abrirJan: b => abrirJan(b.dataset.id, b.dataset.k ? { k: b.dataset.k } : b.dataset.cat ? { cat: b.dataset.cat } : b.dataset.f ? { f: b.dataset.f } : {}),
-    alternarJan: b => { J.alternarAberta(b.dataset.id); menuJanelas($('#bt-janelas')); if (J.aberta(b.dataset.id)) desenharJan(J.el(b.dataset.id)); },
-    resetJan: b => { fecharPop(); J.resetar(b.dataset.t || null); aviso(b.dataset.t ? 'Janelas desta tela reorganizadas' : 'Todas as janelas voltaram ao padrão', '', 'ok', 3000); },
-    destravarTodas: () => { fecharPop(); J.porTela(pref.tela).forEach(id => { const w = J.el(id); if (w.classList.contains('fixa')) w.querySelector('.bt-pin').click(); }); },
+    resetJan: () => { fecharPop(); J.resetar(); aviso('Janelas de volta ao padrão', '', 'ok', 3000); },
     menuMes: b => $('#pop').hidden ? menuMes(b) : fecharPop(),
-    menuJanelas: b => $('#pop').hidden ? menuJanelas(b) : fecharPop(),
     menuCriar: b => $('#pop').hidden ? menuCriar(b) : fecharPop(),
     irMes: b => irMes(b.dataset.k),
     mesAnt: () => irMes(N.addM(sel, -1)),
     mesProx: () => irMes(N.addM(sel, 1)),
     buscar: () => { fecharPop(); buscar(); },
     tema: () => { pref.tema = pref.tema === 'escuro' ? 'claro' : 'escuro'; salvarPref(); aplicarTema(); desenharTudo(); },
-    rail: () => { pref.rail = !pref.rail; salvarPref(); aplicarRail(); },
     calDia: b => { const d = +b.dataset.d; calDia = calDia === d ? null : d; J.visiveis().filter(w => w.dataset.tipo === 'cal').forEach(w => desenharJan(w)); },
     verMeta: b => verMeta(b.dataset.id),
-    verGuardado: () => { irTela('metas'); J.abrir('metas.guardado'); },
+    verGuardado: () => abrirJan('guardado'),
     gAuto: () => { M().guardar = null; mudou({ ping: true }); },
     perg: b => perguntar(b.dataset.q),
     delConta: b => { if (!confirmar(b, 'Excluir?')) return; M().contas = M().contas.filter(x => x.id !== b.dataset.id); mudou({ ping: true }); },
@@ -631,12 +605,13 @@
     rDia: el => { achar(M().rendas, el.dataset.id).dia = dia(el); mudou(); },
     rVal: el => { const v = el.value.trim() ? N.cent(el.value) : 0; if (!valOk(el, v)) return; achar(M().rendas, el.dataset.id).v = v; mudou({ ping: true }); },
     rVa: el => { achar(M().rendas, el.dataset.id).va = el.checked ? 1 : 0; mudou({ ping: true }); },
+    addConta: el => { const n = el.value.trim(); if (!n) return; const x = { id: N.uid(), n, c: el.dataset.cat, v: 0, dia: 0, pago: false, rec: 1 }; M().contas.push(x); pendFoco = 'cv' + x.id; mudou(); },
+    addRenda: el => { const n = el.value.trim(); if (!n) return; const r = { id: N.uid(), n, v: 0, dia: 1, va: /\bva\b|vale/i.test(n) ? 1 : 0, rec: 1 }; M().rendas.push(r); pendFoco = 'rv' + r.id; mudou(); },
     gMes: el => { const v = el.value.trim() ? N.cent(el.value) : 0; if (!valOk(el, v)) return; M().guardar = v; mudou({ ping: true }); },
     gPct: el => { const v = parseFloat(String(el.value).replace(',', '.').replace('%', '')); if (!(v >= 0 && v <= 100)) { aviso('Percentual entre 0 e 100', '', 'warn', 3000); return desenharTudo(); } D.cfg.guardar.pct = v; mudou({ ping: true }); },
     gIni: el => { const v = el.value.trim() ? N.cent(el.value) : 0; if (!valOk(el, v)) return; D.cfg.guardar.inicial = v; mudou(); },
     nome: el => { D.cfg.nome = el.value.trim().slice(0, 40); mudou(); },
     temaChave: el => { pref.tema = el.checked ? 'escuro' : 'claro'; salvarPref(); aplicarTema(); desenharTudo(); },
-    railChave: el => { pref.rail = el.checked; salvarPref(); aplicarRail(); },
     mrNome: el => { D.cfg.modelo.rendas[+el.dataset.i].n = el.value.trim() || 'Renda'; mudou(); },
     mrDia: el => { D.cfg.modelo.rendas[+el.dataset.i].dia = dia(el); mudou(); },
     mrVal: el => { const v = el.value.trim() ? N.cent(el.value) : 0; if (valOk(el, v)) { D.cfg.modelo.rendas[+el.dataset.i].v = v; mudou(); } },
@@ -680,7 +655,7 @@
     novoMes: f => {
       const k = N.mk(+f.y.value, +f.m.value);
       if (!D.meses[k]) { D.meses[k] = N.criarMes(D, k, { nome: f.nome.value, base: f.base.value, valores: f.valores.checked }); aviso(N.nomeCurto(k) + ' criado', f.valores.checked ? 'Confira os valores na janela Contas do mês.' : 'Agora é só preencher os valores.', 'ok'); }
-      J.fechar('f.mes'); sel = k; calDia = null; gravar(); irTela('mes');
+      J.fechar('f.mes'); sel = k; calDia = null; gravar(); desenharTudo(); abrirJan('contas');
     },
     gasto: f => lancarGasto(f), gastoF: f => lancarGasto(f),
     conta: f => {
@@ -748,8 +723,7 @@
     chat.push({ q: 'eu', t: q });
     const r = N.responder(D, sel, q, chatCtx); chatCtx = r.ctx; chat.push({ q: 'ele', t: r.txt });
     if (chat.length > 40) chat.splice(0, chat.length - 40);
-    if (pref.tela !== 'assist') irTela('assist');
-    const w = J.el('assist.chat'); if (w.hidden) J.abrir('assist.chat'); else desenharJan(w);
+    const w = J.el('assist'); if (w.hidden) J.abrir('assist'); else { J.frente(w); desenharJan(w); }
     const i = w.querySelector('[name=q]'); if (i && !J.empilhado()) i.focus();
   }
   async function sha(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('financas:' + t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
@@ -795,9 +769,9 @@
   function iniciarApp() {
     if (iniciado) return; iniciado = true;
     $('#app').hidden = false;
-    J.init($('#mesa'), JANS, { desenhar: desenharJan });
+    J.init($('#mesa'), JANS, { desenhar: desenharJan, mudou: () => menu() });
     J.criarTodas();
-    aplicarRail(); irTela(pref.tela);
+    desenharTudo();
     const c = N.calc(D, sel);
     if (c) { const m = N.analisar(D, sel)[0]; if (m && (m.lvl === 'bad' || m.lvl === 'warn')) setTimeout(() => aviso(m.t, m.x, m.lvl), 700); ultimoPing = (N.analisar(D, sel).find(x => x.id === 'livre') || {}).lvl + '|' + c.livre; }
     window.FIN.pronto = true;
